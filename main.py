@@ -10,8 +10,8 @@ from tqdm import tqdm
 from datamodule import data
 from models import LSTM
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-print("Device: " + str(device))
+DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+print("Device: " + str(DEVICE))
 
 # global variables
 SEED = 97
@@ -21,7 +21,7 @@ OUTPUT_DIM = 1
 EMBEDDING_LENGTH = 300
 N_LAYERS = 2
 LEARNING_RATE = 2e-5
-BIDIRECTIONAL = True
+BIDIRECTIONAL = False
 DROPOUT = 0.25
 N_EPOCHS = 3
 
@@ -38,30 +38,28 @@ def seed_everything(seed: int):
     
 seed_everything(SEED)
 
-TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator, valid_iterator, test_iterator = data.load_dataset(batch_size = BATCH_SIZE, device=device) # add folder arg
+TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator, valid_iterator, test_iterator = data.load_dataset(batch_size = BATCH_SIZE, device=DEVICE) # add folder arg
 
 
-model = LSTM.LSTMSarcasm(OUTPUT_DIM, HIDDEN_DIM, VOCAB_SIZE, EMBEDDING_LENGTH, N_LAYERS, device)
+# BiLSTM model
+#model = LSTM.LSTMSarcasm(OUTPUT_DIM, HIDDEN_DIM, VOCAB_SIZE, EMBEDDING_LENGTH, N_LAYERS, DEVICE, BIDIRECTIONAL)
 
+# attention LSTM model
+model = LSTM.LSTMSarcasmAttn(OUTPUT_DIM, HIDDEN_DIM, VOCAB_SIZE, EMBEDDING_LENGTH, N_LAYERS, DEVICE)
 
 loss_function = nn.BCEWithLogitsLoss()
 optimizer = torch.optim.Adam(model.parameters())
 
-model.to(device)
-loss_function = loss_function.to(device)
+model.to(DEVICE)
+loss_function = loss_function.to(DEVICE)
 
 def calcuate_accuracy(preds, targets):
-    n_correct = (preds==targets).sum().item()
-    return n_correct
-
-def binary_accuracy(preds, y):
-
-    #round predictions to the closest integer
     rounded_preds = torch.round(torch.sigmoid(preds))
-    correct = (rounded_preds == y).float() #convert into float for division 
+    correct = (rounded_preds == targets).float() #convert into float for division 
     acc = correct.sum() / len(correct)
     return acc
 
+# train routine
 def train(model, iterator, optimizer, criterion):
     
     epoch_loss = 0
@@ -78,7 +76,7 @@ def train(model, iterator, optimizer, criterion):
         predictions = model(tweet, tweet_len.to('cpu'))
         loss = criterion(predictions, labels)
         
-        acc = binary_accuracy(predictions, labels)
+        acc = calcuate_accuracy(predictions, labels)
         
         loss.backward()
         
@@ -89,7 +87,7 @@ def train(model, iterator, optimizer, criterion):
         
     return epoch_loss / len(iterator), epoch_acc / len(iterator)
 
-    
+# evaluation routine
 def evaluate(model, iterator, criterion):
     
     epoch_loss = 0
@@ -106,7 +104,7 @@ def evaluate(model, iterator, criterion):
             
             loss = criterion(predictions, labels)
             
-            acc = binary_accuracy(predictions, labels)
+            acc = calcuate_accuracy(predictions, labels)
 
             epoch_loss += loss.item()
             epoch_acc += acc.item()
@@ -128,4 +126,5 @@ for epoch in range(N_EPOCHS):
 
 test_loss, test_acc = evaluate(model, test_iterator, loss_function)
 print(f'Test Loss: {test_loss:.3f} | Test Acc: {test_acc*100:.2f}%')
+
 
