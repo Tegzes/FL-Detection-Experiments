@@ -7,11 +7,18 @@ import torch.nn as nn
 
 from tqdm import tqdm 
 
+from transformers import AutoTokenizer, RobertaTokenizer
 from datamodule import data
-from models import LSTM
+from models import LSTM, CNN, roberta, bertweet
+
+bertweet_tokenizer = AutoTokenizer.from_pretrained("vinai/bertweet-base")
+roberta_tokenizer = RobertaTokenizer.from_pretrained('roberta-base', truncation=True, do_lower_case=True)
+
 
 DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print("Device: " + str(DEVICE))
+print('Device name:', torch.cuda.get_device_name(0))
+
 
 # global variables
 SEED = 97
@@ -38,14 +45,25 @@ def seed_everything(seed: int):
     
 seed_everything(SEED)
 
-TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator, valid_iterator, test_iterator = data.load_dataset(batch_size = BATCH_SIZE, device=DEVICE) # add folder arg
+TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator, valid_iterator, test_iterator, pad_idx = data.load_dataset(batch_size = BATCH_SIZE, device=DEVICE)
 
 
 # BiLSTM model
-#model = LSTM.LSTMSarcasm(OUTPUT_DIM, HIDDEN_DIM, VOCAB_SIZE, EMBEDDING_LENGTH, N_LAYERS, DEVICE, BIDIRECTIONAL)
+# model = LSTM.LSTMSarcasm(OUTPUT_DIM, HIDDEN_DIM, VOCAB_SIZE, EMBEDDING_LENGTH, N_LAYERS, BIDIRECTIONAL)
+
 
 # attention LSTM model
-model = LSTM.LSTMSarcasmAttn(OUTPUT_DIM, HIDDEN_DIM, VOCAB_SIZE, EMBEDDING_LENGTH, N_LAYERS, DEVICE)
+# model = LSTM.LSTMSarcasmAttn(OUTPUT_DIM, HIDDEN_DIM, VOCAB_SIZE, EMBEDDING_LENGTH, N_LAYERS)
+
+
+# Roberta model
+train_iterator, valid_iterator, test_iterator = data.get_dataloader(tokenizer = bertweet_tokenizer)
+model = roberta.RobertaSarc()
+
+# Bertweet model
+train_iterator, valid_iterator, test_iterator = data.get_dataloader(tokenizer = bertweet_tokenizer)
+model = bertweet.BertweetClass()
+
 
 loss_function = nn.BCEWithLogitsLoss()
 optimizer = torch.optim.Adam(model.parameters())
@@ -68,12 +86,19 @@ def train(model, iterator, optimizer, criterion):
     model.train()
 
     for _, batch in enumerate(iterator):
-        tweet, tweet_len = batch.tweet
-        labels = batch.sarcastic
+
+        ids = batch['ids'].to(DEVICE, dtype = torch.long)
+        mask = batch['mask'].to(DEVICE, dtype = torch.long)
+        token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
+        labels = batch['targets'].to(DEVICE, dtype = torch.long)
+
+        _, predictions = torch.max(model(ids, mask, token_type_ids).data, dim=1)
 
         optimizer.zero_grad()
         
-        predictions = model(tweet, tweet_len.to('cpu'))
+        # predictions = model(tweet, tweet_len.to('cpu'))
+        #predictions = model(tweet) #, tweet_len.to('cpu'))
+
         loss = criterion(predictions, labels)
         
         acc = calcuate_accuracy(predictions, labels)
@@ -98,10 +123,17 @@ def evaluate(model, iterator, criterion):
     with torch.no_grad():
     
         for _, batch in enumerate(iterator):
-            tweet, tweet_len = batch.tweet
-            labels = batch.sarcastic
-            predictions = model(tweet, tweet_len.to('cpu'))
-            
+
+            ids = batch['ids'].to(DEVICE, dtype = torch.long)
+            mask = batch['mask'].to(DEVICE, dtype = torch.long)
+            token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
+            labels = batch['targets'].to(DEVICE, dtype = torch.long)
+
+            _, predictions = torch.max(model(ids, mask, token_type_ids).data, dim=1)
+
+            # predictions = model(tweet, tweet_len.to('cpu'))
+            #predictions = model(tweet) #, tweet_len.to('cpu'))
+
             loss = criterion(predictions, labels)
             
             acc = calcuate_accuracy(predictions, labels)
@@ -126,5 +158,4 @@ for epoch in range(N_EPOCHS):
 
 test_loss, test_acc = evaluate(model, test_iterator, loss_function)
 print(f'Test Loss: {test_loss:.3f} | Test Acc: {test_acc*100:.2f}%')
-
 
