@@ -10,7 +10,6 @@ class LSTMSarcasm(nn.Module):
 				vocab_size, 
 				embedding_length,
 				num_layers, 
-				device,
 				bidirectional=False):
 
 		super(LSTMSarcasm, self).__init__()
@@ -31,7 +30,6 @@ class LSTMSarcasm(nn.Module):
 		self.vocab_size = vocab_size
 		self.embedding_length = embedding_length
 		self.num_layers = num_layers
-		self.device = device
 		self.bidirectional = bidirectional
 
 		self.word_embeddings = nn.Embedding(vocab_size, embedding_length)  # Initializing the look-up table.
@@ -75,8 +73,7 @@ class LSTMSarcasmAttn(nn.Module):
 				hidden_size, 
 				vocab_size, 
 				embedding_length,
-				num_layers, 
-				device
+				num_layers
 				):
 
 		super(LSTMSarcasmAttn, self).__init__()
@@ -88,7 +85,6 @@ class LSTMSarcasmAttn(nn.Module):
 		vocab_size : Size of the vocabulary containing unique words
 		embedding_length : Embeddding dimension of GloVe word embeddings
 		num_layers : Number of layers the network should have
-		device: The device on which the model will be sent to
 		bidirectional: boolean variable to choose a simple lstm or a bidirectional lstm, default is False
 		
 		"""
@@ -98,7 +94,6 @@ class LSTMSarcasmAttn(nn.Module):
 		self.vocab_size = vocab_size
 		self.embedding_length = embedding_length
 		self.num_layers = num_layers
-		self.device = device
 
 		self.word_embeddings = nn.Embedding(vocab_size, embedding_length)  # Initializing the look-up table.
 		self.lstm = nn.LSTM(embedding_length, hidden_size, num_layers, batch_first=True)
@@ -139,4 +134,3 @@ class LSTMSarcasmAttn(nn.Module):
 		final_output = self.label(attention_output)
 		final_output = torch.squeeze(final_output, 1)
 		return final_output
-

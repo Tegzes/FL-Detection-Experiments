@@ -1,9 +1,14 @@
 
+from tkinter.tix import MAX
 from sklearn.model_selection import validation_curve
 import torch
 from torchtext import data
 from torchtext.vocab import Vectors, GloVe, FastText
 import random
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+from torch.utils.data import Dataset, DataLoader
 
 import spacy
 from spacy.tokenizer import Tokenizer
@@ -11,6 +16,7 @@ nlp = spacy.load("en_core_web_sm")
 tokenizer = Tokenizer(nlp.vocab)
 
 SEED = 97
+sarc_path = '/home/tegzes/Desktop/Disertatie/Disertatie/main-project/sarcasm_1/datamodule/isarcasm2022_clean.csv'
 
 def spacy_tokenizer(tweet):
     return [token.text for token in tokenizer(tweet)]
@@ -29,16 +35,12 @@ def load_dataset(batch_size, device):
     fields = [(None, None), ('tweet', TEXT), ('sarcastic', LABEL)]
 
     full_data = data.TabularDataset(
-                            path = '/home/tegzes/Desktop/Disertatie/Disertatie/main-project/sarcasm_1/datamodule/isarcasm2022_clean.csv',
+                            path = sarc_path,
                             format = 'csv',
                             fields = fields)
 
     train_data_temp, test_data = full_data.split(split_ratio=0.7, random_state=random.seed(SEED))
     train_data, validation_data = train_data_temp.split(split_ratio=0.7, random_state=random.seed(SEED))
-
-    # TEXT.unk_token = '<unk>'
-    # TEXT.pad_token = '<pad>'
-    # TEXT.eos_token = '<eos>'
 
     TEXT.build_vocab(train_data, max_size = 10000, min_freq = 1, vectors=GloVe('6B', dim=300))
     LABEL.build_vocab(train_data)
@@ -56,8 +58,74 @@ def load_dataset(batch_size, device):
                                                                     sort_within_batch = True, 
                                                                     device=device)
                                                                                                             
-                                                                                                          
+    pad_token = '<pad>'
+    pad_idx = TEXT.vocab[pad_token]
+                                                                                                    
     vocab_size = len(TEXT.vocab)
     EMBEDDING_DIM = TEXT.vocab.vectors.shape[1]
 
-    return TEXT, EMBEDDING_DIM, vocab_size, word_embeddings, train_iter, valid_iter, test_iter
+    return TEXT, EMBEDDING_DIM, vocab_size, word_embeddings, train_iter, valid_iter, test_iter, pad_idx
+
+
+
+# Roberta data loader
+
+class SarcasmData(Dataset):
+    def __init__(self, dataframe, tokenizer, max_len):
+        self.tokenizer = tokenizer
+        self.data = dataframe
+        self.text = self.data.tweet
+        self.targets = self.data.sarcastic
+        self.max_len = max_len
+
+    def __len__(self):
+        return len(self.text)
+
+    def __getitem__(self, index):
+        text = str(self.text[index])
+        text = " ".join(text.split())
+
+        inputs = self.tokenizer.encode_plus(
+            text,
+            None,
+            add_special_tokens=True,
+            max_length=self.max_len,
+            pad_to_max_length=True,
+            return_token_type_ids=True
+        )
+        ids = inputs['input_ids']
+        mask = inputs['attention_mask']
+        token_type_ids = inputs["token_type_ids"]
+
+
+        return {
+            'ids': torch.tensor(ids, dtype=torch.long),
+            'mask': torch.tensor(mask, dtype=torch.long),
+            'token_type_ids': torch.tensor(token_type_ids, dtype=torch.long),
+            'targets': torch.tensor(self.targets[index], dtype=torch.float)
+        }
+
+
+
+def get_dataloader(file_path = sarc_path,
+                    batch_size = 8,
+                    shuffle = True,
+                    num_workers = 0,
+                    max_len = 256,
+                    tokenizer = None):
+
+
+    dataset = pd.read_csv(file_path)
+
+    train_data, test_data = train_test_split(dataset, test_size = 0.2, random_state = SEED)
+    train_data, validation_data = train_test_split(dataset, test_size = 0.2, random_seed = SEED)
+
+    training_set = SarcasmData(train_data, tokenizer, max_len)
+    validation_set = SarcasmData(validation_data, tokenizer, max_len)
+    testing_set = SarcasmData(test_data, tokenizer, max_len)
+
+    training_loader = DataLoader(training_set, batch_size, shuffle, num_workers)
+    validation_loader = DataLoader(validation_set, batch_size, shuffle, num_workers)
+    testing_loader = DataLoader(testing_set, batch_size, shuffle, num_workers)
+
+    return training_loader, validation_loader, testing_loader
