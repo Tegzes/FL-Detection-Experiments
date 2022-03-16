@@ -109,23 +109,23 @@ class SarcasmData(Dataset):
 
 def get_dataloader(file_path = sarc_path,
                     batch_size = 8,
-                    shuffle = True,
+                    # shuffle = True,
                     num_workers = 0,
                     max_len = 256,
-                    tokenizer = None):
+                    tokenizer_bert = None):
 
 
     dataset = pd.read_csv(file_path)
 
     train_data, test_data = train_test_split(dataset, test_size = 0.2, random_state = SEED)
-    train_data, validation_data = train_test_split(dataset, test_size = 0.2, random_seed = SEED)
+    train_data, validation_data = train_test_split(dataset, test_size = 0.2, random_state = SEED)
 
-    training_set = SarcasmData(train_data, tokenizer, max_len)
-    validation_set = SarcasmData(validation_data, tokenizer, max_len)
-    testing_set = SarcasmData(test_data, tokenizer, max_len)
+    training_set = SarcasmData(train_data, tokenizer_bert, max_len)
+    validation_set = SarcasmData(validation_data, tokenizer_bert, max_len)
+    testing_set = SarcasmData(test_data, tokenizer_bert, max_len)
 
-    training_loader = DataLoader(training_set, batch_size, shuffle, num_workers)
-    validation_loader = DataLoader(validation_set, batch_size, shuffle, num_workers)
-    testing_loader = DataLoader(testing_set, batch_size, shuffle, num_workers)
+    training_loader = DataLoader(training_set, batch_size, num_workers)
+    validation_loader = DataLoader(validation_set, batch_size, num_workers)
+    testing_loader = DataLoader(testing_set, batch_size, num_workers)
 
     return training_loader, validation_loader, testing_loader

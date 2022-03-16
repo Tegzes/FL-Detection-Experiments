@@ -57,12 +57,12 @@ TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator, valid_iterator
 
 
 # Roberta model
-train_iterator, valid_iterator, test_iterator = data.get_dataloader(tokenizer = bertweet_tokenizer)
+train_iterator, valid_iterator, test_iterator = data.get_dataloader(tokenizer_bert = roberta_tokenizer)
 model = roberta.RobertaSarc()
 
 # Bertweet model
-train_iterator, valid_iterator, test_iterator = data.get_dataloader(tokenizer = bertweet_tokenizer)
-model = bertweet.BertweetClass()
+# train_iterator, valid_iterator, test_iterator = data.get_dataloader(tokenizer_bert = bertweet_tokenizer)
+# model = bertweet.BertweetClass()
 
 
 loss_function = nn.BCEWithLogitsLoss()
