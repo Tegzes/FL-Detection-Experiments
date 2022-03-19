@@ -1,4 +1,5 @@
 
+from pkgutil import get_loader
 import random, os
 import numpy as np
 
@@ -8,6 +9,7 @@ import torch.nn as nn
 from tqdm import tqdm 
 
 from transformers import AutoTokenizer, RobertaTokenizer
+
 from datamodule import data
 from models import LSTM, CNN, roberta, bertweet
 
@@ -45,7 +47,7 @@ def seed_everything(seed: int):
     
 seed_everything(SEED)
 
-TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator, valid_iterator, test_iterator, pad_idx = data.load_dataset(batch_size = BATCH_SIZE, device=DEVICE)
+#TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator1, valid_iterator1, test_iterator1, pad_idx = data.load_dataset(batch_size = BATCH_SIZE, device=DEVICE)
 
 
 # BiLSTM model
@@ -87,13 +89,13 @@ def train(model, iterator, optimizer, criterion):
 
     for _, batch in enumerate(iterator):
 
-        ids = batch['ids'].to(DEVICE, dtype = torch.long)
-        mask = batch['mask'].to(DEVICE, dtype = torch.long)
-        token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
-        labels = batch['targets'].to(DEVICE, dtype = torch.long)
+        ids = batch['ids'].to(DEVICE)
+        mask = batch['mask'].to(DEVICE)
+        token_type_ids = batch['token_type_ids'].to(DEVICE)
+        labels = batch['targets'].to(DEVICE)
 
         _, predictions = torch.max(model(ids, mask, token_type_ids).data, dim=1)
-
+        print()
         optimizer.zero_grad()
         
         # predictions = model(tweet, tweet_len.to('cpu'))

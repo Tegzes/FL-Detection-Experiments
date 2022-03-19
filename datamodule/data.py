@@ -1,6 +1,4 @@
 
-from tkinter.tix import MAX
-from sklearn.model_selection import validation_curve
 import torch
 from torchtext import data
 from torchtext.vocab import Vectors, GloVe, FastText
@@ -117,8 +115,16 @@ def get_dataloader(file_path = sarc_path,
 
     dataset = pd.read_csv(file_path)
 
-    train_data, test_data = train_test_split(dataset, test_size = 0.2, random_state = SEED)
-    train_data, validation_data = train_test_split(dataset, test_size = 0.2, random_state = SEED)
+    # train_data, test_data = train_test_split(dataset, test_size = 0.2, random_state = SEED)
+    # train_data, validation_data = train_test_split(dataset, test_size = 0.2, random_state = SEED)
+
+    train_data_temp = dataset.sample(frac=0.8, random_state=SEED)
+    test_data = dataset.drop(train_data_temp.index).reset_index(drop=True)
+    train_data_temp = train_data_temp.reset_index(drop=True)
+
+    train_data = train_data_temp.sample(frac=0.8, random_state=SEED)
+    validation_data = train_data_temp.drop(train_data.index).reset_index(drop=True)
+    train_data = train_data.reset_index(drop=True)
 
     training_set = SarcasmData(train_data, tokenizer_bert, max_len)
     validation_set = SarcasmData(validation_data, tokenizer_bert, max_len)
