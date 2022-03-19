@@ -94,19 +94,17 @@ def train(model, iterator, optimizer, criterion):
         token_type_ids = batch['token_type_ids'].to(DEVICE)
         labels = batch['targets'].to(DEVICE)
 
-        _, predictions = torch.max(model(ids, mask, token_type_ids).data, dim=1)
-        print()
-        optimizer.zero_grad()
+        outputs = model(ids, mask, token_type_ids)
         
-        # predictions = model(tweet, tweet_len.to('cpu'))
-        #predictions = model(tweet) #, tweet_len.to('cpu'))
+        loss = criterion(outputs, labels)
+        
+        _, predictions = torch.max(outputs.data, dim = 1)
 
-        loss = criterion(predictions, labels)
-        
         acc = calcuate_accuracy(predictions, labels)
-        
+
+        optimizer.zero_grad()
         loss.backward()
-        
+        # for GPU
         optimizer.step()
         
         epoch_loss += loss.item()
