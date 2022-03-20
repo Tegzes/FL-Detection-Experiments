@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 from transformers import RobertaModel
 
 
@@ -18,5 +19,6 @@ class RobertaSarc(torch.nn.Module):
         pooler = torch.nn.ReLU()(pooler)
         pooler = self.dropout(pooler)
         output = self.classifier(pooler)
+        output = F.softmax(output)
         return output
         

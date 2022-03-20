@@ -69,11 +69,11 @@ def load_dataset(batch_size, device):
 # Roberta data loader
 
 class SarcasmData(Dataset):
-    def __init__(self, dataframe, tokenizer, max_len):
+    def __init__(self, tweet, sarcastic, tokenizer, max_len):
         self.tokenizer = tokenizer
-        self.data = dataframe
-        self.text = self.data.tweet
-        self.targets = self.data.sarcastic
+        # self.data = dataframe
+        self.text = tweet
+        self.targets = sarcastic
         self.max_len = max_len
 
     def __len__(self):
@@ -106,17 +106,17 @@ class SarcasmData(Dataset):
 
 
 def get_dataloader(file_path = sarc_path,
-                    batch_size = 8,
+                    batch_size = 4,
                     # shuffle = True,
-                    num_workers = 0,
+                    num_workers = 1,
                     max_len = 256,
                     tokenizer_bert = None):
 
 
     dataset = pd.read_csv(file_path)
 
-    # train_data, test_data = train_test_split(dataset, test_size = 0.2, random_state = SEED)
-    # train_data, validation_data = train_test_split(dataset, test_size = 0.2, random_state = SEED)
+    # train_data, test_data = train_test_split(dataset, test_size = 0.35, random_state = SEED)
+    # test_data, validation_data = train_test_split(test_data, test_size = 0.5, random_state = SEED)
 
     train_data_temp = dataset.sample(frac=0.8, random_state=SEED)
     test_data = dataset.drop(train_data_temp.index).reset_index(drop=True)
@@ -126,9 +126,9 @@ def get_dataloader(file_path = sarc_path,
     validation_data = train_data_temp.drop(train_data.index).reset_index(drop=True)
     train_data = train_data.reset_index(drop=True)
 
-    training_set = SarcasmData(train_data, tokenizer_bert, max_len)
-    validation_set = SarcasmData(validation_data, tokenizer_bert, max_len)
-    testing_set = SarcasmData(test_data, tokenizer_bert, max_len)
+    training_set = SarcasmData(train_data.tweet, train_data.sarcastic, tokenizer_bert, max_len)
+    validation_set = SarcasmData(validation_data.tweet, validation_data.sarcastic, tokenizer_bert, max_len)
+    testing_set = SarcasmData(test_data.tweet, test_data.sarcastic, tokenizer_bert, max_len)
 
     training_loader = DataLoader(training_set, batch_size, num_workers)
     validation_loader = DataLoader(validation_set, batch_size, num_workers)

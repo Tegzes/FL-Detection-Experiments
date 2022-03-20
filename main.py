@@ -67,17 +67,16 @@ model = roberta.RobertaSarc()
 # model = bertweet.BertweetClass()
 
 
-loss_function = nn.BCEWithLogitsLoss()
-optimizer = torch.optim.Adam(model.parameters())
+loss_function = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr = LEARNING_RATE)
 
 model.to(DEVICE)
-loss_function = loss_function.to(DEVICE)
+# loss_function = loss_function.to(DEVICE)
 
 def calcuate_accuracy(preds, targets):
-    rounded_preds = torch.round(torch.sigmoid(preds))
-    correct = (rounded_preds == targets).float() #convert into float for division 
-    acc = correct.sum() / len(correct)
-    return acc
+    n_correct = (preds==targets).sum().item()
+    return n_correct
+
 
 # train routine
 def train(model, iterator, optimizer, criterion):
@@ -89,26 +88,29 @@ def train(model, iterator, optimizer, criterion):
 
     for _, batch in enumerate(iterator):
 
-        ids = batch['ids'].to(DEVICE)
-        mask = batch['mask'].to(DEVICE)
-        token_type_ids = batch['token_type_ids'].to(DEVICE)
-        labels = batch['targets'].to(DEVICE)
+        ids = batch['ids'].to(DEVICE, dtype = torch.long)
+        mask = batch['mask'].to(DEVICE, dtype = torch.long)
+        token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
+        labels = batch['targets'].to(DEVICE, dtype = torch.long)
 
         outputs = model(ids, mask, token_type_ids)
         
+        # print(outputs)
+
+        _, predictions = torch.max(outputs, dim = 1)
+
         loss = criterion(outputs, labels)
-        
-        _, predictions = torch.max(outputs.data, dim = 1)
 
         acc = calcuate_accuracy(predictions, labels)
+
+        epoch_loss += loss.item()
+        epoch_acc += acc #.item()
 
         optimizer.zero_grad()
         loss.backward()
         # for GPU
         optimizer.step()
-        
-        epoch_loss += loss.item()
-        epoch_acc += acc.item()
+    
         
     return epoch_loss / len(iterator), epoch_acc / len(iterator)
 
@@ -129,17 +131,16 @@ def evaluate(model, iterator, criterion):
             token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
             labels = batch['targets'].to(DEVICE, dtype = torch.long)
 
-            _, predictions = torch.max(model(ids, mask, token_type_ids).data, dim=1)
+            outputs = model(ids, mask, token_type_ids)
+        
+            _, predictions = torch.max(outputs.data, dim = 1)
 
-            # predictions = model(tweet, tweet_len.to('cpu'))
-            #predictions = model(tweet) #, tweet_len.to('cpu'))
-
-            loss = criterion(predictions, labels)
+            loss = criterion(outputs, labels)
             
             acc = calcuate_accuracy(predictions, labels)
 
             epoch_loss += loss.item()
-            epoch_acc += acc.item()
+            epoch_acc += acc #.item()
         
     return epoch_loss / len(iterator), epoch_acc / len(iterator)
 
