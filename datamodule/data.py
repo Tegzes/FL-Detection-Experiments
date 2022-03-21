@@ -107,7 +107,7 @@ class SarcasmData(Dataset):
 
 def get_dataloader(file_path = sarc_path,
                     batch_size = 4,
-                    # shuffle = True,
+                    shuffle = True,
                     num_workers = 1,
                     max_len = 256,
                     tokenizer_bert = None):
@@ -130,8 +130,8 @@ def get_dataloader(file_path = sarc_path,
     validation_set = SarcasmData(validation_data.tweet, validation_data.sarcastic, tokenizer_bert, max_len)
     testing_set = SarcasmData(test_data.tweet, test_data.sarcastic, tokenizer_bert, max_len)
 
-    training_loader = DataLoader(training_set, batch_size, num_workers)
-    validation_loader = DataLoader(validation_set, batch_size, num_workers)
-    testing_loader = DataLoader(testing_set, batch_size, num_workers)
+    training_loader = DataLoader(training_set, batch_size, shuffle = shuffle, num_workers = num_workers)
+    validation_loader = DataLoader(validation_set, batch_size, shuffle = shuffle, num_workers = num_workers)
+    testing_loader = DataLoader(testing_set, batch_size, shuffle = shuffle, num_workers = num_workers)
 
     return training_loader, validation_loader, testing_loader

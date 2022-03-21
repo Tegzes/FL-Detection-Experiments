@@ -5,6 +5,7 @@ import numpy as np
 
 import torch
 import torch.nn as nn
+import torchmetrics
 
 from tqdm import tqdm 
 
@@ -83,66 +84,166 @@ def train(model, iterator, optimizer, criterion):
     
     epoch_loss = 0
     epoch_acc = 0
+    no_of_iterations = 0
+    no_of_examples = 0
+    
+    # torch metrics
+    metric_acc = torchmetrics.Accuracy().to(torch.device("cuda", 0))
+    metric_f1 = torchmetrics.F1(num_classes = 2, average="none").to(torch.device("cuda", 0))
+    metric_f1_micro = torchmetrics.F1(num_classes = 2).to(torch.device("cuda", 0))
+    metric_f1_macro = torchmetrics.F1(num_classes = 2, average='macro').to(torch.device("cuda", 0))
+    metric_precision = torchmetrics.Precision(num_classes = 2, average="none").to(torch.device("cuda", 0))
+    metric_recall = torchmetrics.Recall(num_classes = 2, average="none").to(torch.device("cuda", 0))
+  
     
     model.train()
 
     for _, batch in enumerate(iterator):
-
+        
         ids = batch['ids'].to(DEVICE, dtype = torch.long)
         mask = batch['mask'].to(DEVICE, dtype = torch.long)
         token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
-        labels = batch['targets'].to(DEVICE, dtype = torch.long)
+        targets = batch['targets'].to(DEVICE, dtype = torch.long)
 
         outputs = model(ids, mask, token_type_ids)
-        
-        # print(outputs)
-
-        _, predictions = torch.max(outputs, dim = 1)
-
-        loss = criterion(outputs, labels)
-
-        acc = calcuate_accuracy(predictions, labels)
-
+        loss = criterion(outputs, targets)
         epoch_loss += loss.item()
-        epoch_acc += acc #.item()
+
+        _, predictions = torch.max(outputs.data, dim = 1)
+        acc = calcuate_accuracy(predictions, targets)
+
+        no_of_iterations += 1
+        no_of_examples += targets.size(0)
+        
+#         epoch_acc += acc
+        
+        metric_acc.update(predictions, targets)
+        metric_f1.update(outputs, targets)
+        metric_f1_micro.update(outputs, targets)
+        metric_f1_macro.update(outputs, targets)
+        metric_precision.update(predictions, targets)
+        metric_recall.update(predictions, targets)
 
         optimizer.zero_grad()
         loss.backward()
         # for GPU
         optimizer.step()
-    
         
-    return epoch_loss / len(iterator), epoch_acc / len(iterator)
+
+    epoch_loss = epoch_loss/no_of_iterations
+    epoch_acc = (acc*100)/no_of_examples
+        
+    acc_torch = metric_acc.compute()
+    print(f"Accuracy on all data: {acc_torch}")
+    
+    f1 = metric_f1.compute()
+    print(f"F1 on all data: {f1}")
+    
+    f1_micro = metric_f1_micro.compute()
+    print(f"F1 Micro on all data: {f1_micro}")
+
+    f1_macro = metric_f1_macro.compute()
+    print(f"F1 Macro on all data: {f1_macro}")
+ 
+    precision = metric_precision.compute()
+    print(f"Precision on all data: {precision}")
+
+    recall = metric_recall.compute()
+    print(f"Recall on all data: {recall}")
+    
+    print(f"Training Loss Epoch: {epoch_loss}")
+  
+    
+    metric_acc.reset()
+    metric_f1.reset()
+    metric_f1_micro.reset()
+    metric_f1_macro.reset()
+    metric_precision.reset()
+    metric_recall.reset()
+    
+    return epoch_loss, epoch_acc
 
 # evaluation routine
 def evaluate(model, iterator, criterion):
     
     epoch_loss = 0
     epoch_acc = 0
+    no_of_iterations = 0
+    no_of_examples = 0    
     
+   # torch metrics
+    metric_acc = torchmetrics.Accuracy().to(torch.device("cuda", 0))
+    metric_f1 = torchmetrics.F1(num_classes = 2, average="none").to(torch.device("cuda", 0))
+    metric_f1_micro = torchmetrics.F1(num_classes = 2).to(torch.device("cuda", 0))
+    metric_f1_macro = torchmetrics.F1(num_classes = 2, average='macro').to(torch.device("cuda", 0))
+    metric_precision = torchmetrics.Precision(num_classes = 2, average="none").to(torch.device("cuda", 0))
+    metric_recall = torchmetrics.Recall(num_classes = 2, average="none").to(torch.device("cuda", 0))
+  
+
     model.eval()
     
     with torch.no_grad():
     
         for _, batch in enumerate(iterator):
 
+            batch_size = len(batch)
+
             ids = batch['ids'].to(DEVICE, dtype = torch.long)
             mask = batch['mask'].to(DEVICE, dtype = torch.long)
             token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
-            labels = batch['targets'].to(DEVICE, dtype = torch.long)
+            targets = batch['targets'].to(DEVICE, dtype = torch.long)
 
             outputs = model(ids, mask, token_type_ids)
         
             _, predictions = torch.max(outputs.data, dim = 1)
 
-            loss = criterion(outputs, labels)
+            loss = criterion(outputs, targets)
             
-            acc = calcuate_accuracy(predictions, labels)
+            acc = calcuate_accuracy(predictions, targets)
 
             epoch_loss += loss.item()
-            epoch_acc += acc #.item()
-        
-    return epoch_loss / len(iterator), epoch_acc / len(iterator)
+    
+            metric_acc.update(predictions, targets)
+            metric_f1.update(outputs, targets)
+            metric_f1_micro.update(outputs, targets)
+            metric_f1_macro.update(outputs, targets)
+            metric_precision.update(predictions, targets)
+            metric_recall.update(predictions, targets)
+
+            no_of_iterations += 1
+            no_of_examples += targets.size(0)
+    
+    epoch_loss = epoch_loss/no_of_iterations
+    epoch_acc = (acc*100)/no_of_examples
+
+    acc_torch = metric_acc.compute()
+    print(f"Accuracy on all data: {acc_torch}")
+    
+    f1 = metric_f1.compute()
+    print(f"F1 on all data: {f1}")
+    
+    f1_micro = metric_f1_micro.compute()
+    print(f"F1 Micro on all data: {f1_micro}")
+
+    f1_macro = metric_f1_macro.compute()
+    print(f"F1 Macro on all data: {f1_macro}")
+ 
+    precision = metric_precision.compute()
+    print(f"Precision on all data: {precision}")
+
+    recall = metric_recall.compute()
+    print(f"Recall on all data: {recall}")
+    
+    print(f"Training Loss Epoch: {epoch_loss}")
+
+    metric_acc.reset()
+    metric_f1.reset()
+    metric_f1_micro.reset()
+    metric_f1_macro.reset()
+    metric_precision.reset()
+    metric_recall.reset()
+             
+    return epoch_loss, epoch_acc
 
 
 # experiment loop
