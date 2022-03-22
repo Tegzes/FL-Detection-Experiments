@@ -1,5 +1,3 @@
-
-from pkgutil import get_loader
 import random, os
 import numpy as np
 
@@ -25,7 +23,10 @@ print('Device name:', torch.cuda.get_device_name(0))
 
 # global variables
 SEED = 97
-BATCH_SIZE = 4
+sarc_path = '/home/tegzes/Desktop/FL-Detection-Experiments/datamodule/isarcasm2022.csv'
+BATCH_SIZE_TRAIN = 4
+BATCH_SIZE_TEST = 2
+MAX_LEN = 256
 HIDDEN_DIM = 64
 OUTPUT_DIM = 1
 EMBEDDING_LENGTH = 300
@@ -48,7 +49,7 @@ def seed_everything(seed: int):
     
 seed_everything(SEED)
 
-#TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator1, valid_iterator1, test_iterator1, pad_idx = data.load_dataset(batch_size = BATCH_SIZE, device=DEVICE)
+#TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator1, valid_iterator1, test_iterator1, pad_idx = data.load_dataset(sarc_path, BATCH_SIZE, DEVICE, SEED)
 
 
 # BiLSTM model
@@ -60,7 +61,7 @@ seed_everything(SEED)
 
 
 # Roberta model
-train_iterator, valid_iterator, test_iterator = data.get_dataloader(tokenizer_bert = roberta_tokenizer)
+train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, roberta_tokenizer, SEED)
 model = roberta.RobertaSarc()
 
 # Bertweet model
@@ -130,22 +131,22 @@ def train(model, iterator, optimizer, criterion):
     epoch_acc = (acc*100)/no_of_examples
         
     acc_torch = metric_acc.compute()
-    print(f"Accuracy on all data: {acc_torch}")
+    print(f"Training Accuracy: {acc_torch}")
     
     f1 = metric_f1.compute()
-    print(f"F1 on all data: {f1}")
+    print(f"Training F1: {f1}")
     
     f1_micro = metric_f1_micro.compute()
-    print(f"F1 Micro on all data: {f1_micro}")
+    print(f"Training F1 Micro: {f1_micro}")
 
     f1_macro = metric_f1_macro.compute()
-    print(f"F1 Macro on all data: {f1_macro}")
+    print(f"Training F1 Macro: {f1_macro}")
  
     precision = metric_precision.compute()
-    print(f"Precision on all data: {precision}")
+    print(f"Training Precision: {precision}")
 
     recall = metric_recall.compute()
-    print(f"Recall on all data: {recall}")
+    print(f"Training Recall: {recall}")
     
     print(f"Training Loss Epoch: {epoch_loss}")
   
@@ -211,24 +212,24 @@ def evaluate(model, iterator, criterion):
     epoch_acc = (acc*100)/no_of_examples
 
     acc_torch = metric_acc.compute()
-    print(f"Accuracy on all data: {acc_torch}")
+    print(f"Validation Accuracy: {acc_torch}")
     
     f1 = metric_f1.compute()
-    print(f"F1 on all data: {f1}")
+    print(f"Validation F1 Validation: {f1}")
     
     f1_micro = metric_f1_micro.compute()
-    print(f"F1 Micro on all data: {f1_micro}")
+    print(f"Validation F1 Micro: {f1_micro}")
 
     f1_macro = metric_f1_macro.compute()
-    print(f"F1 Macro on all data: {f1_macro}")
+    print(f"Validation F1 Macro: {f1_macro}")
  
     precision = metric_precision.compute()
-    print(f"Precision on all data: {precision}")
+    print(f"Validation Precision: {precision}")
 
     recall = metric_recall.compute()
-    print(f"Recall on all data: {recall}")
+    print(f"Validation Recall: {recall}")
     
-    print(f"Training Loss Epoch: {epoch_loss}")
+    print(f"Validation Loss Epoch: {epoch_loss}")
 
     metric_acc.reset()
     metric_f1.reset()
@@ -249,7 +250,6 @@ for epoch in range(N_EPOCHS):
     print(f'Epoch: {epoch+1:02}')
     print(f'\tTrain Loss: {train_loss:.3f} | Train Acc: {train_acc*100:.2f}%')
     print(f'\t Val. Loss: {valid_loss:.3f} |  Val. Acc: {valid_acc*100:.2f}%')
-
 
 
 test_loss, test_acc = evaluate(model, test_iterator, loss_function)

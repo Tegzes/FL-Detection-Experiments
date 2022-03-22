@@ -4,22 +4,13 @@ from torchtext import data
 from torchtext.vocab import Vectors, GloVe, FastText
 import random
 import pandas as pd
-from sklearn.model_selection import train_test_split
 
 from torch.utils.data import Dataset, DataLoader
 
-import spacy
-from spacy.tokenizer import Tokenizer
-nlp = spacy.load("en_core_web_sm")
-tokenizer = Tokenizer(nlp.vocab)
+from datamodule.utils import spacy_tokenizer, clean_text
 
-SEED = 97
-sarc_path = '/home/tegzes/Desktop/Disertatie/Disertatie/main-project/sarcasm_1/datamodule/isarcasm2022_clean.csv'
 
-def spacy_tokenizer(tweet):
-    return [token.text for token in tokenizer(tweet)]
-
-def load_dataset(batch_size, device):
+def load_dataset(path, batch_size, device, seed):
     
     TEXT = data.Field(batch_first = True,
                     #   use_vocab = False,
@@ -33,12 +24,12 @@ def load_dataset(batch_size, device):
     fields = [(None, None), ('tweet', TEXT), ('sarcastic', LABEL)]
 
     full_data = data.TabularDataset(
-                            path = sarc_path,
+                            path = path,
                             format = 'csv',
                             fields = fields)
 
-    train_data_temp, test_data = full_data.split(split_ratio=0.7, random_state=random.seed(SEED))
-    train_data, validation_data = train_data_temp.split(split_ratio=0.7, random_state=random.seed(SEED))
+    train_data_temp, test_data = full_data.split(split_ratio=0.7, random_state=random.seed(seed))
+    train_data, validation_data = train_data_temp.split(split_ratio=0.7, random_state=random.seed(seed))
 
     TEXT.build_vocab(train_data, max_size = 10000, min_freq = 1, vectors=GloVe('6B', dim=300))
     LABEL.build_vocab(train_data)
@@ -69,11 +60,12 @@ def load_dataset(batch_size, device):
 # Roberta data loader
 
 class SarcasmData(Dataset):
-    def __init__(self, tweet, sarcastic, tokenizer, max_len):
+    def __init__(self, dataframe, tokenizer, max_len):
         self.tokenizer = tokenizer
         # self.data = dataframe
-        self.text = tweet
-        self.targets = sarcastic
+        self.data = dataframe
+        self.text = dataframe.tweet
+        self.targets = self.data.sarcastic
         self.max_len = max_len
 
     def __len__(self):
@@ -105,35 +97,52 @@ class SarcasmData(Dataset):
 
 
 
-def get_dataloader(file_path = sarc_path,
-                    batch_size = 4,
-                    shuffle = True,
-                    num_workers = 1,
-                    max_len = 256,
-                    tokenizer_bert = None):
+def roberta_data_loader(file_path,
+                    batch_size_train,
+                    batch_size_test,
+                    shuffle,
+                    num_workers,
+                    max_len,
+                    tokenizer_bert ,
+                    seed):
 
 
     dataset = pd.read_csv(file_path)
 
+    dataset = dataset[['tweet', 'sarcastic']]
+
+    dataset["tweet"] = dataset["tweet"].astype(str)
+
+    dataset['tweet'] = dataset['tweet'].apply(clean_text)
 
 
     # train_data, test_data = train_test_split(dataset, test_size = 0.35, random_state = SEED)
     # test_data, validation_data = train_test_split(test_data, test_size = 0.5, random_state = SEED)
 
-    train_data_temp = dataset.sample(frac=0.8, random_state=SEED)
+    train_data_temp = dataset.sample(frac=0.8, random_state=seed)
     test_data = dataset.drop(train_data_temp.index).reset_index(drop=True)
     train_data_temp = train_data_temp.reset_index(drop=True)
 
-    train_data = train_data_temp.sample(frac=0.8, random_state=SEED)
+    train_data = train_data_temp.sample(frac=0.8, random_state=seed)
     validation_data = train_data_temp.drop(train_data.index).reset_index(drop=True)
     train_data = train_data.reset_index(drop=True)
 
-    training_set = SarcasmData(train_data.tweet, train_data.sarcastic, tokenizer_bert, max_len)
-    validation_set = SarcasmData(validation_data.tweet, validation_data.sarcastic, tokenizer_bert, max_len)
-    testing_set = SarcasmData(test_data.tweet, test_data.sarcastic, tokenizer_bert, max_len)
+    training_set = SarcasmData(train_data, tokenizer_bert, max_len)
+    validation_set = SarcasmData(validation_data, tokenizer_bert, max_len)
+    testing_set = SarcasmData(test_data, tokenizer_bert, max_len)
 
-    training_loader = DataLoader(training_set, batch_size, shuffle = shuffle, num_workers = num_workers)
-    validation_loader = DataLoader(validation_set, batch_size, shuffle = shuffle, num_workers = num_workers)
-    testing_loader = DataLoader(testing_set, batch_size, shuffle = shuffle, num_workers = num_workers)
+    train_params = {'batch_size': batch_size_train,
+                'shuffle': shuffle,
+                'num_workers': num_workers
+                }
+
+    test_params = {'batch_size': batch_size_test,
+                'shuffle': shuffle,
+                'num_workers': num_workers
+                }
+
+    training_loader = DataLoader(training_set, **train_params)
+    validation_loader = DataLoader(validation_set, **train_params)
+    testing_loader = DataLoader(testing_set, **test_params)
 
     return training_loader, validation_loader, testing_loader
