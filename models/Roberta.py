@@ -19,6 +19,6 @@ class RobertaSarc(torch.nn.Module):
         pooler = torch.nn.ReLU()(pooler)
         pooler = self.dropout(pooler)
         output = self.classifier(pooler)
-        output = F.softmax(output, dim = 1)
+        # output = F.softmax(output, dim = 1)
         return output
         

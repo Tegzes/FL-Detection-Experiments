@@ -10,7 +10,7 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, RobertaTokenizer
 
 from datamodule import data
-from models import LSTM, CNN, roberta, bertweet
+from models import LSTM, CNN, Bertweet, Roberta
 
 bertweet_tokenizer = AutoTokenizer.from_pretrained("vinai/bertweet-base")
 roberta_tokenizer = RobertaTokenizer.from_pretrained('roberta-base', truncation=True, do_lower_case=True)
@@ -62,7 +62,7 @@ seed_everything(SEED)
 
 # Roberta model
 train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, roberta_tokenizer, SEED)
-model = roberta.RobertaSarc()
+model = Roberta.RobertaSarc()
 
 # Bertweet model
 # train_iterator, valid_iterator, test_iterator = data.get_dataloader(tokenizer_bert = bertweet_tokenizer)
