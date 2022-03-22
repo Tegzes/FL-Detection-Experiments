@@ -6,6 +6,8 @@ import torch.nn as nn
 import torchmetrics
 
 from tqdm import tqdm 
+import hydra
+from clearml import Task, Logger
 
 from transformers import AutoTokenizer, RobertaTokenizer
 
@@ -20,6 +22,7 @@ DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print("Device: " + str(DEVICE))
 print('Device name:', torch.cuda.get_device_name(0))
 
+task = Task.init(project_name="FL Detection", task_name="Training")
 
 # global variables
 SEED = 97
@@ -97,7 +100,7 @@ def train(model, iterator, optimizer, criterion):
     
     model.train()
 
-    for _, batch in enumerate(iterator):
+    for batch_idx, batch in tqdm(enumerate(iterator, 0)):
         
         ids = batch['ids'].to(DEVICE, dtype = torch.long)
         mask = batch['mask'].to(DEVICE, dtype = torch.long)
@@ -125,6 +128,12 @@ def train(model, iterator, optimizer, criterion):
         loss.backward()
         # for GPU
         optimizer.step()
+
+        Logger.current_logger().report_scalar(
+            "train", "loss", iteration = (epoch * len(iterator) + batch_idx), value = loss.item())
+        print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_idx * len(batch['ids']), len(iterator),
+                100. * batch_idx / len(iterator), loss.item()))
         
 
     epoch_loss = epoch_loss/no_of_iterations
@@ -181,7 +190,7 @@ def evaluate(model, iterator, criterion):
     
     with torch.no_grad():
     
-        for _, batch in enumerate(iterator):
+        for _, batch in tqdm(enumerate(iterator, 0)):
 
             ids = batch['ids'].to(DEVICE, dtype = torch.long)
             mask = batch['mask'].to(DEVICE, dtype = torch.long)
@@ -209,7 +218,16 @@ def evaluate(model, iterator, criterion):
             no_of_examples += targets.size(0)
     
     epoch_loss = epoch_loss/no_of_iterations
-    epoch_acc = (acc*100)/no_of_examples
+    epoch_acc = (acc*100)/no_of_iterations #no_of_examples
+
+    # clear ml
+    Logger.current_logger().report_scalar(
+        "test", "loss", iteration=epoch, value=epoch_loss)
+    Logger.current_logger().report_scalar(
+        "test", "accuracy", iteration=epoch, value=epoch_acc)
+    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+        epoch_loss, acc, len(iterator),
+        100. * acc / len(iterator)))
 
     acc_torch = metric_acc.compute()
     print(f"Validation Accuracy: {acc_torch}")
