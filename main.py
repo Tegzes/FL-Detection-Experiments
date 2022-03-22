@@ -30,7 +30,7 @@ HIDDEN_DIM = 64
 OUTPUT_DIM = 1
 EMBEDDING_LENGTH = 300
 N_LAYERS = 2
-LEARNING_RATE = 2e-5
+LEARNING_RATE = 1e-5
 BIDIRECTIONAL = False
 DROPOUT = 0.25
 N_EPOCHS = 3
@@ -67,12 +67,10 @@ model = roberta.RobertaSarc()
 # train_iterator, valid_iterator, test_iterator = data.get_dataloader(tokenizer_bert = bertweet_tokenizer)
 # model = bertweet.BertweetClass()
 
-
+model.to(DEVICE)
 loss_function = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr = LEARNING_RATE)
 
-model.to(DEVICE)
-# loss_function = loss_function.to(DEVICE)
 
 def calcuate_accuracy(preds, targets):
     n_correct = (preds==targets).sum().item()
@@ -114,9 +112,7 @@ def train(model, iterator, optimizer, criterion):
 
         no_of_iterations += 1
         no_of_examples += targets.size(0)
-        
-#         epoch_acc += acc
-        
+                
         metric_acc.update(predictions, targets)
         metric_f1.update(outputs, targets)
         metric_f1_micro.update(outputs, targets)
@@ -185,8 +181,6 @@ def evaluate(model, iterator, criterion):
     with torch.no_grad():
     
         for _, batch in enumerate(iterator):
-
-            batch_size = len(batch)
 
             ids = batch['ids'].to(DEVICE, dtype = torch.long)
             mask = batch['mask'].to(DEVICE, dtype = torch.long)
