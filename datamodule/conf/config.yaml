@@ -1,0 +1,19 @@
+
+### Data Module Config ###
+batch_size_train : 4
+batch_size_test : 2
+max_len : 256
+
+
+### Model ###
+hidden_dim : 64
+output_dim : 1
+embedding_length : 300
+n_layers : 2
+bidirectional : False
+dropout : 0.25
+
+
+### Training ###
+n_epochs : 3
+learning_rate : 2e-5

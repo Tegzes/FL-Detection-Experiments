@@ -7,6 +7,8 @@ import torchmetrics
 
 from tqdm import tqdm 
 import hydra
+# from omegaconf import DictConfig
+
 from clearml import Task, Logger
 
 from transformers import AutoTokenizer, RobertaTokenizer
@@ -65,7 +67,8 @@ seed_everything(SEED)
 
 # Roberta model
 train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, roberta_tokenizer, SEED)
-model = Roberta.RobertaSarc()
+# model = Roberta.RobertaSarc()
+model = Roberta.RobertaLSTMSarc(N_LAYERS, BIDIRECTIONAL)
 
 # Bertweet model
 # train_iterator, valid_iterator, test_iterator = data.get_dataloader(tokenizer_bert = bertweet_tokenizer)
