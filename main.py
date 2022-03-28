@@ -1,5 +1,3 @@
-import random, os
-import numpy as np
 
 import torch
 import torch.nn as nn
@@ -11,11 +9,10 @@ import hydra
 
 from clearml import Task, Logger
 
-from transformers import AutoTokenizer, RobertaTokenizer
-
-from datamodule import data
+from datamodule import data, utils
 from models import LSTM, CNN, Bertweet, Roberta
 
+from transformers import AutoTokenizer, RobertaTokenizer
 bertweet_tokenizer = AutoTokenizer.from_pretrained("vinai/bertweet-base")
 roberta_tokenizer = RobertaTokenizer.from_pretrained('roberta-base', truncation=True, do_lower_case=True)
 
@@ -42,17 +39,7 @@ DROPOUT = 0.25
 N_EPOCHS = 3
 
 # for the reproductibility if the experiments
-def seed_everything(seed: int):
-    
-    random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = True
-    
-seed_everything(SEED)
+utils.seed_everything(SEED)
 
 #TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator1, valid_iterator1, test_iterator1, pad_idx = data.load_dataset(sarc_path, BATCH_SIZE, DEVICE, SEED)
 
@@ -68,7 +55,10 @@ seed_everything(SEED)
 # Roberta model
 train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, roberta_tokenizer, SEED)
 # model = Roberta.RobertaSarc()
-model = Roberta.RobertaLSTMSarc(N_LAYERS, BIDIRECTIONAL)
+# model = Roberta.RobertaLSTMSarc(N_LAYERS, BIDIRECTIONAL)
+
+# Bert + LSTM
+model = Roberta.BertLSTM()
 
 # Bertweet model
 # train_iterator, valid_iterator, test_iterator = data.get_dataloader(tokenizer_bert = bertweet_tokenizer)
@@ -105,12 +95,14 @@ def train(model, iterator, optimizer, criterion):
 
     for batch_idx, batch in tqdm(enumerate(iterator, 0)):
         
-        ids = batch['ids'].to(DEVICE, dtype = torch.long)
-        mask = batch['mask'].to(DEVICE, dtype = torch.long)
-        token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
-        targets = batch['targets'].to(DEVICE, dtype = torch.long)
+        ids = batch['ids'].to(DEVICE)
+        mask = batch['mask'].to(DEVICE)
+        token_type_ids = batch['token_type_ids'].to(DEVICE)
+        tweet_lens = batch['tweet_len']
+        targets = batch['targets'].to(DEVICE)
 
-        outputs = model(ids, mask, token_type_ids)
+        outputs = model(ids, mask, token_type_ids, tweet_lens.to('cpu'))
+        # targets = targets.unsqueeze(1) # for BCEWithLogitsLoss criterion
         loss = criterion(outputs, targets)
         epoch_loss += loss.item()
 
@@ -134,9 +126,10 @@ def train(model, iterator, optimizer, criterion):
 
         Logger.current_logger().report_scalar(
             "train", "loss", iteration = (epoch * len(iterator) + batch_idx), value = loss.item())
-        print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(batch['ids']), len(iterator),
-                100. * batch_idx / len(iterator), loss.item()))
+
+        # print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+        #         epoch, batch_idx * len(batch['ids']), len(iterator),
+        #         100. * batch_idx / len(iterator), loss.item()))
         
 
     epoch_loss = epoch_loss/no_of_iterations
@@ -228,9 +221,10 @@ def evaluate(model, iterator, criterion):
         "test", "loss", iteration=epoch, value=epoch_loss)
     Logger.current_logger().report_scalar(
         "test", "accuracy", iteration=epoch, value=epoch_acc)
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        epoch_loss, acc, len(iterator),
-        100. * acc / len(iterator)))
+
+    # print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+    #     epoch_loss, acc, len(iterator),
+    #     100. * acc / len(iterator)))
 
     acc_torch = metric_acc.compute()
     print(f"Validation Accuracy: {acc_torch}")

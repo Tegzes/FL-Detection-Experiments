@@ -1,4 +1,9 @@
+import os
+import random
 import re
+import torch
+
+import numpy as np
 import spacy
 from spacy.tokenizer import Tokenizer
 nlp = spacy.load("en_core_web_sm")
@@ -46,3 +51,15 @@ def clean_text(text):
 
 def spacy_tokenizer(tweet):
     return [token.text for token in tokenizer(tweet)]
+
+
+def seed_everything(seed: int):
+    
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
+    

@@ -88,13 +88,15 @@ class SarcasmData(Dataset):
         ids = inputs['input_ids']
         mask = inputs['attention_mask']
         token_type_ids = inputs["token_type_ids"]
+        tweet_len = len(inputs)
 
 
         return {
             'ids': torch.tensor(ids, dtype=torch.long),
             'mask': torch.tensor(mask, dtype=torch.long),
             'token_type_ids': torch.tensor(token_type_ids, dtype=torch.long),
-            'targets': torch.tensor(self.targets[index], dtype=torch.float)
+            'targets': torch.tensor(self.targets[index], dtype=torch.float),
+            'tweet_len' : torch.tensor(tweet_len, dtype = torch.long)
         }
 
 
