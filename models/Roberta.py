@@ -86,7 +86,7 @@ class BertLSTM(torch.nn.Module):
         self.clf = torch.nn.Linear(2 * self.hidden_size, 2)
         
     def forward(self, input_ids, attention_mask, token_type_ids, tweet_len):
-        
+        # tweet_len = tweet_len.to('cpu')
         encoded_layers, pooled_output = self.bert(input_ids, attention_mask)
         encoded_layers = encoded_layers.permute(1, 0, 2)
 

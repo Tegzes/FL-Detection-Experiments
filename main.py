@@ -17,7 +17,8 @@ bertweet_tokenizer = AutoTokenizer.from_pretrained("vinai/bertweet-base")
 roberta_tokenizer = RobertaTokenizer.from_pretrained('roberta-base', truncation=True, do_lower_case=True)
 
 
-DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+# DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+DEVICE = 'cpu'
 print("Device: " + str(DEVICE))
 print('Device name:', torch.cuda.get_device_name(0))
 
