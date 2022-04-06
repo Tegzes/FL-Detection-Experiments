@@ -9,3 +9,5 @@ Bertweet
 
 Roberta + RCNN
 Bert + LSTM
+
+GloVe + LSTM/Attention LSTM/CNN
