@@ -75,7 +75,7 @@ def calcuate_accuracy(preds, targets):
     return n_correct
 
 
-# train routine
+# training routine
 def train(model, iterator, optimizer, criterion):
     
     epoch_loss = 0
@@ -83,7 +83,7 @@ def train(model, iterator, optimizer, criterion):
     no_of_iterations = 0
     no_of_examples = 0
     
-    # torch metrics
+    # using torch metrics to calculate the metrics
     metric_acc = torchmetrics.Accuracy().to(torch.device("cuda", 0))
     metric_f1 = torchmetrics.F1(num_classes = 2, average="none").to(torch.device("cuda", 0))
     metric_f1_micro = torchmetrics.F1(num_classes = 2).to(torch.device("cuda", 0))
@@ -125,6 +125,7 @@ def train(model, iterator, optimizer, criterion):
         # for GPU
         optimizer.step()
 
+           # clearML integration
         Logger.current_logger().report_scalar(
             "train", "loss", iteration = (epoch * len(iterator) + batch_idx), value = loss.item())
 
@@ -217,7 +218,7 @@ def evaluate(model, iterator, criterion):
     epoch_loss = epoch_loss/no_of_iterations
     epoch_acc = (acc*100)/no_of_iterations #no_of_examples
 
-    # clear ml
+    # clear ml integration
     Logger.current_logger().report_scalar(
         "test", "loss", iteration=epoch, value=epoch_loss)
     Logger.current_logger().report_scalar(
