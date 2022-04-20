@@ -102,10 +102,8 @@ def train(model, iterator, optimizer, criterion):
         targets = batch['targets'].to(DEVICE, dtype = torch.long)
         tweet_lens = batch['tweet_len']
 
-        print(targets)
         # outputs = model(ids, mask, token_type_ids, tweet_lens.to('cpu'))
         outputs = model(ids, mask, token_type_ids)
-        print(outputs)
 
         # targets = targets.unsqueeze(1) # for BCEWithLogitsLoss criterion
         loss = criterion(outputs, targets)
