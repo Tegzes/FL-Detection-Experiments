@@ -17,17 +17,17 @@ bertweet_tokenizer = AutoTokenizer.from_pretrained("vinai/bertweet-base")
 roberta_tokenizer = RobertaTokenizer.from_pretrained('roberta-base', truncation=True, do_lower_case=True)
 
 
-# DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-DEVICE = 'cpu'
+DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+# DEVICE = 'cpu'
 print("Device: " + str(DEVICE))
 print('Device name:', torch.cuda.get_device_name(0))
 
-task = Task.init(project_name="FL Detection", task_name="Training")
+# task = Task.init(project_name="FL Detection", task_name="Training")
 
 # global variables
 SEED = 97
 sarc_path = '/home/tegzes/Desktop/FL-Detection-Experiments/datamodule/isarcasm2022.csv'
-BATCH_SIZE_TRAIN = 4
+BATCH_SIZE_TRAIN = 2
 BATCH_SIZE_TEST = 2
 MAX_LEN = 256
 HIDDEN_DIM = 64
@@ -59,11 +59,11 @@ train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_pa
 # model = Roberta.RobertaLSTMSarc(N_LAYERS, BIDIRECTIONAL)
 
 # Bert + LSTM
-model = Roberta.BertLSTM()
+# model = Roberta.BertLSTM()
 
 # Bertweet model
 # train_iterator, valid_iterator, test_iterator = data.get_dataloader(tokenizer_bert = bertweet_tokenizer)
-# model = bertweet.BertweetClass()
+model = Bertweet.BertweetClass()
 
 model.to(DEVICE)
 loss_function = nn.CrossEntropyLoss()
@@ -96,13 +96,17 @@ def train(model, iterator, optimizer, criterion):
 
     for batch_idx, batch in tqdm(enumerate(iterator, 0)):
         
-        ids = batch['ids'].to(DEVICE)
-        mask = batch['mask'].to(DEVICE)
-        token_type_ids = batch['token_type_ids'].to(DEVICE)
+        ids = batch['ids'].to(DEVICE, dtype = torch.long)
+        mask = batch['mask'].to(DEVICE, dtype = torch.long)
+        token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
+        targets = batch['targets'].to(DEVICE, dtype = torch.long)
         tweet_lens = batch['tweet_len']
-        targets = batch['targets'].to(DEVICE)
 
-        outputs = model(ids, mask, token_type_ids, tweet_lens.to('cpu'))
+        print(targets)
+        # outputs = model(ids, mask, token_type_ids, tweet_lens.to('cpu'))
+        outputs = model(ids, mask, token_type_ids)
+        print(outputs)
+
         # targets = targets.unsqueeze(1) # for BCEWithLogitsLoss criterion
         loss = criterion(outputs, targets)
         epoch_loss += loss.item()
@@ -125,9 +129,9 @@ def train(model, iterator, optimizer, criterion):
         # for GPU
         optimizer.step()
 
-        Logger.current_logger().report_scalar(
-            "train", "loss", iteration = (epoch * len(iterator) + batch_idx), value = loss.item())
-
+        # Logger.current_logger().report_scalar(
+        #     "train", "loss", iteration = (epoch * len(iterator) + batch_idx), value = loss.item())
+#----
         # print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
         #         epoch, batch_idx * len(batch['ids']), len(iterator),
         #         100. * batch_idx / len(iterator), loss.item()))
@@ -218,10 +222,10 @@ def evaluate(model, iterator, criterion):
     epoch_acc = (acc*100)/no_of_iterations #no_of_examples
 
     # clear ml
-    Logger.current_logger().report_scalar(
-        "test", "loss", iteration=epoch, value=epoch_loss)
-    Logger.current_logger().report_scalar(
-        "test", "accuracy", iteration=epoch, value=epoch_acc)
+    # Logger.current_logger().report_scalar(
+    #     "test", "loss", iteration=epoch, value=epoch_loss)
+    # Logger.current_logger().report_scalar(
+    #     "test", "accuracy", iteration=epoch, value=epoch_acc)
 
     # print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
     #     epoch_loss, acc, len(iterator),
