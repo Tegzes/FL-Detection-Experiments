@@ -10,7 +10,7 @@ import hydra
 from clearml import Task, Logger
 
 from datamodule import data, utils
-from models import LSTM, CNN, Bertweet, Roberta
+from models import LSTM, CNN, Bertweet, Roberta, Bert
 
 from transformers import AutoTokenizer, RobertaTokenizer, BertTokenizer, BertModel
 
@@ -60,7 +60,7 @@ train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_pa
 # Bert + LSTM
 train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bert_tokenizer, SEED)
 bert = BertModel.from_pretrained('bert-base-uncased')
-model = Roberta.BertLSTM(bert, 2)
+model = Bert.BertLSTM(bert, 2)
 
 # Bertweet model
 # train_iterator, valid_iterator, test_iterator =  data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, roberta_tokenizer, SEED)
