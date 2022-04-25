@@ -76,11 +76,11 @@ class RobertaLSTMSarc(torch.nn.Module):
         return output
 
 # Bert + LSTM
-class BERTSentiment(torch.nn.Module):
+class BertLSTM(torch.nn.Module):
     def __init__(self,
                  bert,
                  output_dim):
-        super(BERTSentiment, self).__init__()
+        super(BertLSTM, self).__init__()
 
         self.bert = bert
         embedding_dim = bert.config.to_dict()['hidden_size']
