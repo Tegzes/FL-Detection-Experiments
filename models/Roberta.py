@@ -76,23 +76,28 @@ class RobertaLSTMSarc(torch.nn.Module):
         return output
 
 # Bert + LSTM
-class BertLSTM(torch.nn.Module):
-    def __init__(self,pre_trained='bert-base-uncased'):
-        super().__init__()
-        
-        self.bert = BertModel.from_pretrained(pre_trained)
-        self.hidden_size = self.bert.config.hidden_size
-        self.LSTM = torch.nn.LSTM(self.hidden_size,self.hidden_size,bidirectional=True)
-        self.clf = torch.nn.Linear(2 * self.hidden_size, 2)
-        
-    def forward(self, input_ids, attention_mask, token_type_ids, tweet_len):
-        # tweet_len = tweet_len.to('cpu')
-        encoded_layers, pooled_output = self.bert(input_ids, attention_mask)
-        encoded_layers = encoded_layers.permute(1, 0, 2)
+class BERTSentiment(torch.nn.Module):
+    def __init__(self,
+                 bert,
+                 output_dim):
+        super(BERTSentiment, self).__init__()
 
-        _, (last_hidden, _) = self.LSTM(pack_padded_sequence(encoded_layers, tweet_len, batch_first=True, enforce_sorted=True))
-        output_hidden = torch.cat((last_hidden[0], last_hidden[1]), dim=1)
+        self.bert = bert
+        embedding_dim = bert.config.to_dict()['hidden_size']
+        self.LSTM = torch.nn.LSTM(768, 384, batch_first=True, bidirectional=True)
+        self.out = torch.nn.Linear(768, output_dim)
+
+    def forward(self, text, mask):
+        #text = [batch size, sent len]
+        embedded = self.bert(text, mask)[0]
+
+        lstm_output, (last_hidden, _) = self.LSTM(embedded)
+
+        output_hidden = torch.cat((last_hidden[0], last_hidden[1]), dim=-1)
         output_hidden = F.dropout(output_hidden,0.2)
-        output = self.clf(output_hidden)
         
+        # output_hidden = F.dropout(embedded, 0.2)
+        output = self.out(output_hidden)
+
+        #output = [batch size, out dim]
         return output

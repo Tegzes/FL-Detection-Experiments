@@ -12,23 +12,22 @@ from clearml import Task, Logger
 from datamodule import data, utils
 from models import LSTM, CNN, Bertweet, Roberta
 
-from transformers import AutoTokenizer, RobertaTokenizer
+from transformers import AutoTokenizer, RobertaTokenizer, BertTokenizer, BertModel
+
 bertweet_tokenizer = AutoTokenizer.from_pretrained("vinai/bertweet-base")
 roberta_tokenizer = RobertaTokenizer.from_pretrained('roberta-base', truncation=True, do_lower_case=True)
-
+bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
 DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 # DEVICE = 'cpu'
 print("Device: " + str(DEVICE))
 print('Device name:', torch.cuda.get_device_name(0))
 
-# task = Task.init(project_name="FL Detection", task_name="Training")
-
 # global variables
 SEED = 97
 sarc_path = '/home/tegzes/Desktop/FL-Detection-Experiments/datamodule/isarcasm2022.csv'
-BATCH_SIZE_TRAIN = 2
-BATCH_SIZE_TEST = 2
+BATCH_SIZE_TRAIN = 1
+BATCH_SIZE_TEST = 1
 MAX_LEN = 256
 HIDDEN_DIM = 64
 OUTPUT_DIM = 1
@@ -59,14 +58,18 @@ train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_pa
 # model = Roberta.RobertaLSTMSarc(N_LAYERS, BIDIRECTIONAL)
 
 # Bert + LSTM
-# model = Roberta.BertLSTM()
+train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bert_tokenizer, SEED)
+bert = BertModel.from_pretrained('bert-base-uncased')
+model = Roberta.BertLSTM(bert, 2)
 
 # Bertweet model
-# train_iterator, valid_iterator, test_iterator = data.get_dataloader(tokenizer_bert = bertweet_tokenizer)
-model = Bertweet.BertweetClass()
+# train_iterator, valid_iterator, test_iterator =  data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, roberta_tokenizer, SEED)
+# model = Bertweet.BertweetClass()
 
 model.to(DEVICE)
-loss_function = nn.CrossEntropyLoss()
+print(model)
+cross_entropy_loss = nn.CrossEntropyLoss()
+bce_loss = nn.BCELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr = LEARNING_RATE)
 
 
@@ -76,6 +79,7 @@ def calcuate_accuracy(preds, targets):
 
 
 # training routine
+task = Task.init(project_name="FL Detection", task_name="Training")
 def train(model, iterator, optimizer, criterion):
     
     epoch_loss = 0
@@ -100,10 +104,10 @@ def train(model, iterator, optimizer, criterion):
         mask = batch['mask'].to(DEVICE, dtype = torch.long)
         token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
         targets = batch['targets'].to(DEVICE, dtype = torch.long)
-        tweet_lens = batch['tweet_len']
+        # tweet_lens = batch['tweet_len']
 
-        # outputs = model(ids, mask, token_type_ids, tweet_lens.to('cpu'))
-        outputs = model(ids, mask, token_type_ids)
+        outputs = model(ids, mask)
+        # outputs = model(ids, mask, token_type_ids)
 
         # targets = targets.unsqueeze(1) # for BCEWithLogitsLoss criterion
         loss = criterion(outputs, targets)
@@ -127,13 +131,8 @@ def train(model, iterator, optimizer, criterion):
         # for GPU
         optimizer.step()
 
-        # Logger.current_logger().report_scalar(
-        #     "train", "loss", iteration = (epoch * len(iterator) + batch_idx), value = loss.item())
-#----
-        # print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-        #         epoch, batch_idx * len(batch['ids']), len(iterator),
-        #         100. * batch_idx / len(iterator), loss.item()))
-        
+        Logger.current_logger().report_scalar(
+            "train", "loss", iteration = (epoch * len(iterator) + batch_idx), value = loss.item())
 
     epoch_loss = epoch_loss/no_of_iterations
     epoch_acc = (acc*100)/no_of_examples
@@ -158,6 +157,8 @@ def train(model, iterator, optimizer, criterion):
     
     print(f"Training Loss Epoch: {epoch_loss}")
   
+    Logger.current_logger().report_scalar(
+      "train", "accuracy", iteration=epoch, value=acc_torch)
     
     metric_acc.reset()
     metric_f1.reset()
@@ -196,7 +197,7 @@ def evaluate(model, iterator, criterion):
             token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
             targets = batch['targets'].to(DEVICE, dtype = torch.long)
 
-            outputs = model(ids, mask, token_type_ids)
+            outputs = model(ids, mask)
         
             _, predictions = torch.max(outputs.data, dim = 1)
 
@@ -219,16 +220,6 @@ def evaluate(model, iterator, criterion):
     epoch_loss = epoch_loss/no_of_iterations
     epoch_acc = (acc*100)/no_of_iterations #no_of_examples
 
-    # clear ml
-    # Logger.current_logger().report_scalar(
-    #     "test", "loss", iteration=epoch, value=epoch_loss)
-    # Logger.current_logger().report_scalar(
-    #     "test", "accuracy", iteration=epoch, value=epoch_acc)
-
-    # print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-    #     epoch_loss, acc, len(iterator),
-    #     100. * acc / len(iterator)))
-
     acc_torch = metric_acc.compute()
     print(f"Validation Accuracy: {acc_torch}")
     
@@ -249,6 +240,13 @@ def evaluate(model, iterator, criterion):
     
     print(f"Validation Loss Epoch: {epoch_loss}")
 
+    # clear ml
+    Logger.current_logger().report_scalar(
+        "test", "loss", iteration=epoch, value=epoch_loss)
+    Logger.current_logger().report_scalar(
+        "test", "accuracy", iteration=epoch, value=acc_torch)
+
+
     metric_acc.reset()
     metric_f1.reset()
     metric_f1_micro.reset()
@@ -262,14 +260,15 @@ def evaluate(model, iterator, criterion):
 # experiment loop
 for epoch in range(N_EPOCHS):
 
-    train_loss, train_acc = train(model, train_iterator, optimizer, loss_function)
-    valid_loss, valid_acc = evaluate(model, valid_iterator, loss_function)
+    train_loss, train_acc = train(model, train_iterator, optimizer, cross_entropy_loss)
+    valid_loss, valid_acc = evaluate(model, valid_iterator, cross_entropy_loss)
         
     print(f'Epoch: {epoch+1:02}')
     print(f'\tTrain Loss: {train_loss:.3f} | Train Acc: {train_acc*100:.2f}%')
     print(f'\t Val. Loss: {valid_loss:.3f} |  Val. Acc: {valid_acc*100:.2f}%')
 
 
-test_loss, test_acc = evaluate(model, test_iterator, loss_function)
+test_loss, test_acc = evaluate(model, test_iterator, cross_entropy_loss)
 print(f'Test Loss: {test_loss:.3f} | Test Acc: {test_acc*100:.2f}%')
 
+task.close()
