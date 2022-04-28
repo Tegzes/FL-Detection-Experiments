@@ -10,6 +10,8 @@ Bertweet
 
 Roberta + RCNN
 
+Roberta + LSTM (concatenated inputs and latent space)
+
 Bert + LSTM
 
 GloVe + LSTM/Attention LSTM/CNN
