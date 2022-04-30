@@ -24,7 +24,6 @@ class RobertaSarc(torch.nn.Module):
         return output
 
 
-
 class RobertaLSTMSarc(torch.nn.Module):
     def __init__(self,
                 num_layers,
