@@ -27,51 +27,38 @@ class RobertaSarc(torch.nn.Module):
 
 class RobertaLSTMSarc(torch.nn.Module):
     def __init__(self,
-                # hidden_size,
                 num_layers,
-                bidirectional):
+                bidirectional,
+                output_dim):
 
         super(RobertaLSTMSarc, self).__init__()
 
         # self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.bidirectional = bidirectional
+        self.output_dim = output_dim
 
         self.config = RobertaConfig.from_pretrained("roberta-base")
         self.config.output_hidden_states = True
         self.roberta_layers = RobertaModel.from_pretrained("roberta-base", config = self.config)
         self.hidden_size = self.roberta_layers.config.hidden_size
 
-        # self.pre_classifier = torch.nn.Linear(768, 768)
-        self.lstm = torch.nn.LSTM(self.hidden_size, self.hidden_size//2, num_layers, batch_first=True, bidirectional=True)
-        # self.dropout = torch.nn.Dropout(0.25)
-        self.classifier = torch.nn.Linear(self.hidden_size, 2)
-        # self.classifier = torch.nn.Linear(2 * self.hidden_size if bidirectional else self.hidden_size, 2)
+        self.lstm = torch.nn.LSTM(self.hidden_size, 384, num_layers, batch_first=True, bidirectional=bidirectional)
+        self.dropout = torch.nn.Dropout(0.25)
+        # self.classifier = torch.nn.Linear(self.hidden_size, output_dim)
+        self.classifier = torch.nn.Linear(self.hidden_size if bidirectional else self.hidden_size//2, output_dim)
 		
 
-    def forward(self, input_ids, attention_mask, token_type_ids, tweet_len):
+    def forward(self, input_ids, attention_mask, token_type_ids):
         # roberta part
-        output = self.roberta_layers(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids) # last layer(can be used for token classif), pooler output (can be used for seq classif), hidden states
-        hidden_states = output[2]
-
-
-        last_hidden_layers = torch.stack([hidden_states[-1], hidden_states[-2], hidden_states[-3], hidden_states[-4]])
-        last_hidden_layers = torch.mean(last_hidden_layers, 0)
-        # last_hidden_layers = torch.tensor(last_hidden_layers, dtype = torch.long)
-        last_hidden_layers = last_hidden_layers.permute(1, 0, 2)
-
-        # print(f"hidden_states shape: {len(hidden_states)}") # 13
-        # print(f"Hidden_states -1 shape: {len(hidden_states[-1])}") # 4
-        # print(f"last_hidden_layers shape: {len(last_hidden_layers)}") # 256
-        # print(f"Expected hidden size: {self.hidden_size}") # 768 
+        embedded = self.roberta_layers(input_ids, attention_mask, token_type_ids)[0]
 
         # lstm part
-        _, (last_hidden, _) = self.lstm(last_hidden_layers)
-        # output_hidden = torch.cat((last_hidden[0], last_hidden[1]), dim=1)
-        print(f"Last Hidden from LSTM: {len(last_hidden[0])}")
-        # print(f"Last Hidden from LSTM: {len(last_hidden)}")
-        
-        output = self.classifier(output[1])
+        _, (last_hidden, _) = self.lstm(embedded)
+
+        output_hidden = torch.cat((last_hidden[0], last_hidden[1]), dim=-1)
+        output_hidden = self.dropout(output_hidden)
+        output = self.classifier(output_hidden)
 
         return output
 

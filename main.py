@@ -16,7 +16,7 @@ from transformers import AutoTokenizer, RobertaTokenizer, BertTokenizer, BertMod
 
 bertweet_tokenizer = AutoTokenizer.from_pretrained("vinai/bertweet-base")
 roberta_tokenizer = RobertaTokenizer.from_pretrained('roberta-base', truncation=True, do_lower_case=True)
-bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', truncation=True, do_lower_case=True)
 
 DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 # DEVICE = 'cpu'
@@ -30,11 +30,11 @@ BATCH_SIZE_TRAIN = 1
 BATCH_SIZE_TEST = 1
 MAX_LEN = 256
 HIDDEN_DIM = 64
-OUTPUT_DIM = 1
+OUTPUT_DIM = 2
 EMBEDDING_LENGTH = 300
-N_LAYERS = 2
+N_LAYERS = 1
 LEARNING_RATE = 1e-5
-BIDIRECTIONAL = False
+BIDIRECTIONAL = True
 DROPOUT = 0.25
 N_EPOCHS = 3
 
@@ -52,18 +52,18 @@ utils.seed_everything(SEED)
 # model = LSTM.LSTMSarcasmAttn(OUTPUT_DIM, HIDDEN_DIM, VOCAB_SIZE, EMBEDDING_LENGTH, N_LAYERS)
 
 
-# Roberta model
+# Roberta models
 train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, roberta_tokenizer, SEED)
 # model = Roberta.RobertaSarc()
-# model = Roberta.RobertaLSTMSarc(N_LAYERS, BIDIRECTIONAL)
+model = Roberta.RobertaLSTMSarc(N_LAYERS, BIDIRECTIONAL, OUTPUT_DIM)
 
 # Bert + LSTM
-train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bert_tokenizer, SEED)
-bert = BertModel.from_pretrained('bert-base-uncased')
-model = Bert.BertLSTM(bert, 2)
+# train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bert_tokenizer, SEED)
+# bert = BertModel.from_pretrained('bert-base-uncased')
+# model = Bert.BertLSTM(bert, 2)
 
 # Bertweet model
-# train_iterator, valid_iterator, test_iterator =  data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, roberta_tokenizer, SEED)
+# train_iterator, valid_iterator, test_iterator =  data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bertweet_tokenizer, SEED)
 # model = Bertweet.BertweetClass()
 
 model.to(DEVICE)
@@ -72,11 +72,9 @@ cross_entropy_loss = nn.CrossEntropyLoss()
 bce_loss = nn.BCELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr = LEARNING_RATE)
 
-
 def calcuate_accuracy(preds, targets):
     n_correct = (preds==targets).sum().item()
     return n_correct
-
 
 # training routine
 task = Task.init(project_name="FL Detection", task_name="Training")
@@ -106,8 +104,8 @@ def train(model, iterator, optimizer, criterion):
         targets = batch['targets'].to(DEVICE, dtype = torch.long)
         # tweet_lens = batch['tweet_len']
 
-        outputs = model(ids, mask)
-        # outputs = model(ids, mask, token_type_ids)
+        # outputs = model(ids, mask)
+        outputs = model(ids, mask, token_type_ids)
 
         # targets = targets.unsqueeze(1) # for BCEWithLogitsLoss criterion
         loss = criterion(outputs, targets)
@@ -197,7 +195,7 @@ def evaluate(model, iterator, criterion):
             token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
             targets = batch['targets'].to(DEVICE, dtype = torch.long)
 
-            outputs = model(ids, mask)
+            outputs = model(ids, mask, token_type_ids)
         
             _, predictions = torch.max(outputs.data, dim = 1)
 
