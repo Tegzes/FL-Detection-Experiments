@@ -5,6 +5,9 @@ from transformers import RobertaModel, RobertaConfig
 
 
 class RobertaSarc(torch.nn.Module):
+    """
+    Roberta 
+    """
     def __init__(self):
         super(RobertaSarc, self).__init__()
         self.roberta_layers = RobertaModel.from_pretrained("roberta-base")
@@ -25,6 +28,9 @@ class RobertaSarc(torch.nn.Module):
 
 
 class RobertaLSTMSarc(torch.nn.Module):
+    """
+    Roberta + LSTM
+    """
     def __init__(self,
                 num_layers,
                 bidirectional,
@@ -61,3 +67,36 @@ class RobertaLSTMSarc(torch.nn.Module):
 
         return output
 
+
+class RobertaRCNN(torch.nn.Module):
+    """
+    Roberta Recurrent CNN
+    """
+    def __init__(self, hidden_size_linear, output_dim, dropout):
+        super(RobertaRCNN, self).__init__()
+        
+        self.config = RobertaConfig.from_pretrained("roberta-base")
+        self.config.output_hidden_states = True
+        self.roberta_layers = RobertaModel.from_pretrained("roberta-base", config = self.config)
+        self.hidden_size = self.embedding.config.hidden_size
+        
+        self.lstm = torch.nn.LSTM(self.hidden_size, 384, batch_first=True, bidirectional=True, dropout=dropout)
+        self.W = torch.nn.Linear(self.hidden_size + 2*384, hidden_size_linear) # basically the hidden state * 2
+        self.tanh = torch.nn.Tanh()
+        self.fc = torch.nn.Linear(hidden_size_linear, output_dim)
+
+    def forward(self, input_ids, attention_mask, token_type_ids):
+        
+        output_embedded = self.roberta_layers(input_ids, attention_mask, token_type_ids)[0]
+        # output_embedded = batch size, seq_len, embedding_dim
+        output_lstm, _ = self.lstm(output_embedded)
+        # output_lstm = batch size, seq_len, 2*lstm_hidden_size
+        output = torch.cat([output_lstm, output_embedded], 2)
+        # output = batch size, seq_len, embedding_dim + 2*hidden_size
+        output = self.tanh(self.W(output)).transpose(1, 2)
+        # output = batch size, seq_len, hidden_size_linear -> batch size, hidden_size_linear, seq_len
+        output = F.max_pool1d(output, output.size(2)).squeeze(2)
+        # output = batch size, hidden_size_linear
+        output = self.fc(output)
+        # output = batch size, output_dim
+        return output

@@ -60,7 +60,7 @@ model = Roberta.RobertaLSTMSarc(N_LAYERS, BIDIRECTIONAL, OUTPUT_DIM)
 # Bert + LSTM
 # train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bert_tokenizer, SEED)
 # bert = BertModel.from_pretrained('bert-base-uncased')
-# model = Bert.BertLSTM(bert, 2)
+# model = Bert.BertLSTM(bert, BIDIRECTIONAL, 2)
 
 # Bertweet model
 # train_iterator, valid_iterator, test_iterator =  data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bertweet_tokenizer, SEED)

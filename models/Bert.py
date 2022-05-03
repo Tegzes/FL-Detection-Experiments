@@ -4,16 +4,19 @@ from torch.nn.utils.rnn import pack_padded_sequence
 from transformers import BertModel
 
 
-# Bert + LSTM
 class BertLSTM(torch.nn.Module):
+    """
+    BERT + LSTM
+    """
     def __init__(self,
                  bert,
+                 bidirectional,
                  output_dim):
         super(BertLSTM, self).__init__()
 
         self.bert = bert
         embedding_dim = bert.config.to_dict()['hidden_size']
-        self.LSTM = torch.nn.LSTM(768, 384, batch_first=True, bidirectional=True)
+        self.LSTM = torch.nn.LSTM(768, 384, batch_first=True, bidirectional=bidirectional)
         self.out = torch.nn.Linear(768, output_dim)
 
     def forward(self, text, mask):
