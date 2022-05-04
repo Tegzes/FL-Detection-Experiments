@@ -1,6 +1,5 @@
 import torch
 import torch.nn.functional as F
-from torch.nn.utils.rnn import pack_padded_sequence
 from transformers import RobertaModel, RobertaConfig
 
 
@@ -16,8 +15,8 @@ class RobertaSarc(torch.nn.Module):
         self.classifier = torch.nn.Linear(768, 2)
 
     def forward(self, input_ids, attention_mask, token_type_ids):
-        output_1 = self.roberta_layers(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
-        hidden_state = output_1[0]
+        roberta_output = self.roberta_layers(input_ids, attention_mask, token_type_ids)
+        hidden_state = roberta_output[0] 
         pooler = hidden_state[:, 0]
         pooler = self.pre_classifier(pooler)
         pooler = torch.nn.ReLU()(pooler)

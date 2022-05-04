@@ -15,7 +15,7 @@ class BertLSTM(torch.nn.Module):
         super(BertLSTM, self).__init__()
 
         self.bert = bert
-        embedding_dim = bert.config.to_dict()['hidden_size']
+        # embedding_dim = bert.config.to_dict()['hidden_size']
         self.LSTM = torch.nn.LSTM(768, 384, batch_first=True, bidirectional=bidirectional)
         self.out = torch.nn.Linear(768, output_dim)
 
@@ -23,7 +23,7 @@ class BertLSTM(torch.nn.Module):
         #text = [batch size, sent len]
         embedded = self.bert(text, mask)[0]
 
-        lstm_output, (last_hidden, _) = self.LSTM(embedded)
+        _, (last_hidden, _) = self.LSTM(embedded)
 
         output_hidden = torch.cat((last_hidden[0], last_hidden[1]), dim=-1)
         output_hidden = F.dropout(output_hidden,0.2)
