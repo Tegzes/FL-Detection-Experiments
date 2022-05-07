@@ -86,11 +86,11 @@ class RobertaRCNN(torch.nn.Module):
 
     def forward(self, input_ids, attention_mask, token_type_ids):
         
-        output_embedded = self.roberta_layers(input_ids, attention_mask, token_type_ids)[0]
+        output_roberta = self.roberta_layers(input_ids, attention_mask, token_type_ids)[0]
         # output_embedded = batch size, seq_len, embedding_dim
-        output_lstm, _ = self.lstm(output_embedded)
+        output_lstm, _ = self.lstm(output_roberta)
         # output_lstm = batch size, seq_len, 2*lstm_hidden_size
-        output = torch.cat([output_lstm, output_embedded], 2)
+        output = torch.cat([output_lstm, output_roberta], 2)
         # output = batch size, seq_len, embedding_dim + 2*hidden_size
         output = self.tanh(self.W(output)).transpose(1, 2)
         # output = batch size, seq_len, hidden_size_linear -> batch size, hidden_size_linear, seq_len

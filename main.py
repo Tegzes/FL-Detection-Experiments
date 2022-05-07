@@ -55,11 +55,11 @@ utils.seed_everything(SEED)
 # Roberta models
 train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, roberta_tokenizer, SEED)
 # model = Roberta.RobertaSarc()
-model = Roberta.RobertaLSTMSarc(N_LAYERS, BIDIRECTIONAL, OUTPUT_DIM)
+# model = Roberta.RobertaLSTMSarc(N_LAYERS, BIDIRECTIONAL, OUTPUT_DIM)
 
 # Bert + LSTM
 # train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bert_tokenizer, SEED)
-# bert = BertModel.from_pretrained('bert-base-uncased')
+model = Bert.BertClass(DROPOUT)
 # model = Bert.BertLSTM(bert, BIDIRECTIONAL, 2)
 
 # Bertweet model
@@ -67,7 +67,7 @@ model = Roberta.RobertaLSTMSarc(N_LAYERS, BIDIRECTIONAL, OUTPUT_DIM)
 # model = Bertweet.BertweetClass()
 
 model.to(DEVICE)
-print(model)
+# print(model)
 cross_entropy_loss = nn.CrossEntropyLoss()
 bce_loss = nn.BCELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr = LEARNING_RATE)
@@ -165,7 +165,7 @@ def train(model, iterator, optimizer, criterion):
     metric_precision.reset()
     metric_recall.reset()
     
-    return epoch_loss, epoch_acc
+    return epoch_loss
 
 # evaluation routine
 def evaluate(model, iterator, criterion):
@@ -252,21 +252,16 @@ def evaluate(model, iterator, criterion):
     metric_precision.reset()
     metric_recall.reset()
              
-    return epoch_loss, epoch_acc
+    return epoch_loss
 
 
 # experiment loop
 for epoch in range(N_EPOCHS):
-
-    train_loss, train_acc = train(model, train_iterator, optimizer, cross_entropy_loss)
-    valid_loss, valid_acc = evaluate(model, valid_iterator, cross_entropy_loss)
-        
     print(f'Epoch: {epoch+1:02}')
-    print(f'\tTrain Loss: {train_loss:.3f} | Train Acc: {train_acc*100:.2f}%')
-    print(f'\t Val. Loss: {valid_loss:.3f} |  Val. Acc: {valid_acc*100:.2f}%')
-
-
-test_loss, test_acc = evaluate(model, test_iterator, cross_entropy_loss)
-print(f'Test Loss: {test_loss:.3f} | Test Acc: {test_acc*100:.2f}%')
+    train_loss = train(model, train_iterator, optimizer, cross_entropy_loss)
+    valid_loss = evaluate(model, valid_iterator, cross_entropy_loss)
+        
+test_loss = evaluate(model, test_iterator, cross_entropy_loss)
+print(f'Test Loss: {test_loss:.3f}')
 
 task.close()

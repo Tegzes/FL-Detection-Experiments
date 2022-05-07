@@ -1,10 +1,35 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence
-from transformers import BertModel
+from transformers import BertModel, BertConfig
+
+class BertClass(nn.Module):
+
+    def __init__(self, dropout=0.25):
+
+        super(BertClass, self).__init__()
+
+        config = BertConfig.from_pretrained('bert-base-cased')
+        config.output_hidden_states = True
+        self.bert = BertModel.from_pretrained('bert-base-cased', config)
+        self.linear1 = nn.Linear(768, 768)
+        self.dropout = nn.Dropout(dropout)
+        self.linear = nn.Linear(768, 2)
+
+    def forward(self, input_ids, mask, tokens):
+
+        output = self.bert(input_ids=input_ids, attention_mask=mask)
+        hidden_state = output[0]
+        pooler = hidden_state[:, 0]
+        pooler = self.linear1(pooler)
+        dropout_output = self.dropout(pooler)
+        linear_output = self.linear(dropout_output)
+
+        return linear_output
 
 
-class BertLSTM(torch.nn.Module):
+class BertLSTM(nn.Module):
     """
     BERT + LSTM
     """
@@ -16,8 +41,8 @@ class BertLSTM(torch.nn.Module):
 
         self.bert = bert
         # embedding_dim = bert.config.to_dict()['hidden_size']
-        self.LSTM = torch.nn.LSTM(768, 384, batch_first=True, bidirectional=bidirectional)
-        self.out = torch.nn.Linear(768, output_dim)
+        self.LSTM = nn.LSTM(768, 384, batch_first=True, bidirectional=bidirectional)
+        self.out = nn.Linear(768, output_dim)
 
     def forward(self, text, mask):
         #text = [batch size, sent len]
