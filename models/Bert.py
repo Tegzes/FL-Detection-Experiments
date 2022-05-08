@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence
-from transformers import BertModel, BertConfig
+from transformers import BertModel, BertConfig, BertForSequenceClassification
+
 
 class BertClass(nn.Module):
 
@@ -10,9 +11,9 @@ class BertClass(nn.Module):
 
         super(BertClass, self).__init__()
 
-        config = BertConfig.from_pretrained('bert-base-cased')
+        config = BertConfig.from_pretrained('bert-base-uncased')
         config.output_hidden_states = True
-        self.bert = BertModel.from_pretrained('bert-base-cased', config)
+        self.bert = BertModel.from_pretrained('bert-base-uncased', config)
         self.linear1 = nn.Linear(768, 768)
         self.dropout = nn.Dropout(dropout)
         self.linear = nn.Linear(768, 2)
@@ -20,9 +21,12 @@ class BertClass(nn.Module):
     def forward(self, input_ids, mask, tokens):
 
         output = self.bert(input_ids=input_ids, attention_mask=mask)
-        hidden_state = output[0]
-        pooler = hidden_state[:, 0]
-        pooler = self.linear1(pooler)
+        # print(input_ids.shape)
+        hidden_state = output[1]
+        # pooler = hidden_state[:, 0]
+        pooler = self.linear1(hidden_state)
+        # pooler = torch.nn.ReLU()(pooler)
+
         dropout_output = self.dropout(pooler)
         linear_output = self.linear(dropout_output)
 
