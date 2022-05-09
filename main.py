@@ -41,7 +41,7 @@ N_EPOCHS = 3
 # for the reproductibility if the experiments
 utils.seed_everything(SEED)
 
-#TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator1, valid_iterator1, test_iterator1, pad_idx = data.load_dataset(sarc_path, BATCH_SIZE, DEVICE, SEED)
+# TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator1, valid_iterator1, test_iterator1, pad_idx = data.load_dataset(sarc_path, BATCH_SIZE, DEVICE, SEED)
 
 
 # BiLSTM model
@@ -58,15 +58,16 @@ utils.seed_everything(SEED)
 # model = Roberta.RobertaLSTMSarc(N_LAYERS, BIDIRECTIONAL, OUTPUT_DIM)
 
 # Bert + LSTM
-train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bert_tokenizer, SEED)
+# train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bert_tokenizer, SEED)
 # model = Bert.BertClass()
 # model = Bert.BertLSTM(bert, BIDIRECTIONAL, 2)
-model = Bert.BertRCNN(2, DROPOUT)
+# model = Bert.BertRCNN(2, DROPOUT)
 
 # Bertweet model
-# train_iterator, valid_iterator, test_iterator =  data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bertweet_tokenizer, SEED)
+train_iterator, valid_iterator, test_iterator =  data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bertweet_tokenizer, SEED)
 # model = Bertweet.BertweetClass()
 # model = Bertweet.BertweetLSTM()
+model = Bertweet.BertweetRCNN(2, DROPOUT)
 
 model.to(DEVICE)
 # print(model)
