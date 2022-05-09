@@ -71,18 +71,18 @@ class RobertaRCNN(torch.nn.Module):
     """
     Roberta Recurrent CNN
     """
-    def __init__(self, hidden_size_linear, output_dim, dropout):
+    def __init__(self, output_dim, dropout):
         super(RobertaRCNN, self).__init__()
         
         self.config = RobertaConfig.from_pretrained("roberta-base")
         self.config.output_hidden_states = True
         self.roberta_layers = RobertaModel.from_pretrained("roberta-base", config = self.config)
-        self.hidden_size = self.embedding.config.hidden_size
+        self.hidden_size = self.roberta_layers.config.hidden_size
         
         self.lstm = torch.nn.LSTM(self.hidden_size, 384, batch_first=True, bidirectional=True, dropout=dropout)
-        self.W = torch.nn.Linear(self.hidden_size + 2*384, hidden_size_linear) # basically the hidden state * 2
+        self.W = torch.nn.Linear(self.hidden_size + 2*384, 768) # basically the hidden state * 2
         self.tanh = torch.nn.Tanh()
-        self.fc = torch.nn.Linear(hidden_size_linear, output_dim)
+        self.fc = torch.nn.Linear(768, output_dim)
 
     def forward(self, input_ids, attention_mask, token_type_ids):
         

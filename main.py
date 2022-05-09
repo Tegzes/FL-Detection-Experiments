@@ -24,7 +24,7 @@ print("Device: " + str(DEVICE))
 print('Device name:', torch.cuda.get_device_name(0))
 
 # global variables
-SEED = 97
+SEED = 47
 sarc_path = '/home/tegzes/Desktop/FL-Detection-Experiments/datamodule/isarcasm2022.csv'
 BATCH_SIZE_TRAIN = 2
 BATCH_SIZE_TEST = 1
@@ -58,14 +58,15 @@ utils.seed_everything(SEED)
 # model = Roberta.RobertaLSTMSarc(N_LAYERS, BIDIRECTIONAL, OUTPUT_DIM)
 
 # Bert + LSTM
-# train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bert_tokenizer, SEED)
+train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bert_tokenizer, SEED)
 # model = Bert.BertClass()
 # model = Bert.BertLSTM(bert, BIDIRECTIONAL, 2)
+model = Bert.BertRCNN(2, DROPOUT)
 
 # Bertweet model
-train_iterator, valid_iterator, test_iterator =  data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bertweet_tokenizer, SEED)
+# train_iterator, valid_iterator, test_iterator =  data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bertweet_tokenizer, SEED)
 # model = Bertweet.BertweetClass()
-model = Bertweet.BertweetLSTM()
+# model = Bertweet.BertweetLSTM()
 
 model.to(DEVICE)
 # print(model)

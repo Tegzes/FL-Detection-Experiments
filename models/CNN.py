@@ -10,6 +10,7 @@ else:
     device = torch.device("cpu")
 
 # from https://chriskhanhtran.github.io/posts/cnn-sentence-classification/
+
 class CNN_NLP(nn.Module):
     """An 1D Convulational Neural Network for Sentence Classification."""
     def __init__(self,

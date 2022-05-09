@@ -14,13 +14,15 @@ class BertClass(nn.Module):
         config = BertConfig.from_pretrained('bert-base-uncased')
         config.output_hidden_states = True
         self.bert = BertModel.from_pretrained('bert-base-uncased', config)
+        
+
         self.linear1 = nn.Linear(768, 768)
         self.dropout = nn.Dropout(dropout)
         self.linear = nn.Linear(768, 2)
 
-    def forward(self, input_ids, mask, tokens):
+    def forward(self, input_ids, attention_mask, token_type_ids):
 
-        output = self.bert(input_ids=input_ids, attention_mask=mask)
+        output = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
         # print(input_ids.shape)
         hidden_state = output[1]
         # pooler = hidden_state[:, 0]
@@ -61,4 +63,38 @@ class BertLSTM(nn.Module):
         output = self.out(output_hidden)
 
         #output = [batch size, out dim]
+        return output
+
+
+class BertRCNN(torch.nn.Module):
+    """
+    Bert Recurrent CNN
+    """
+    def __init__(self, output_dim, dropout):
+        super(BertRCNN, self).__init__()
+        
+        config = BertConfig.from_pretrained('bert-base-uncased')
+        config.output_hidden_states = True
+        self.bert = BertModel.from_pretrained('bert-base-uncased', config)
+        self.hidden_size = self.bert.config.hidden_size
+        
+        self.lstm = torch.nn.LSTM(self.hidden_size, 384, batch_first=True, bidirectional=True, dropout=dropout)
+        self.W = torch.nn.Linear(self.hidden_size + 2*384, 768) # basically the hidden state * 2
+        self.tanh = torch.nn.Tanh()
+        self.fc = torch.nn.Linear(768, output_dim)
+
+    def forward(self, input_ids, attention_mask, token_type_ids):
+        
+        output_bert = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)[0]
+        # output_embedded = batch size, seq_len, embedding_dim
+        output_lstm, _ = self.lstm(output_bert)
+        # output_lstm = batch size, seq_len, 2*lstm_hidden_size
+        output = torch.cat([output_lstm, output_bert], 2)
+        # output = batch size, seq_len, embedding_dim + 2*hidden_size
+        output = self.tanh(self.W(output)).transpose(1, 2)
+        # output = batch size, seq_len, hidden_size_linear -> batch size, hidden_size_linear, seq_len
+        output = F.max_pool1d(output, output.size(2)).squeeze(2)
+        # output = batch size, hidden_size_linear
+        output = self.fc(output)
+        # output = batch size, output_dim
         return output
