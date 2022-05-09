@@ -10,9 +10,11 @@ Roberta
 
 Bertweet
 
-Roberta + RCNN
+Roberta + LSTM 
 
-Roberta + LSTM (concatenated Roberta outputs and LSTM output)
+Bertweet + LSTM
+
+Roberta + RCNN (concatenated Roberta outputs and LSTM output)
 
 Bert + LSTM
 
