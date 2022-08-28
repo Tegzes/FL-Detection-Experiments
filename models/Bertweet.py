@@ -55,7 +55,7 @@ class BertweetLSTM(nn.Module):
 
 class BertweetRCNN(torch.nn.Module):
     """
-    Bertweet Recurrent CNN
+    Bertweet RCNN
     """
     def __init__(self, output_dim, dropout):
         super(BertweetRCNN, self).__init__()

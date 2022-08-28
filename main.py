@@ -4,10 +4,10 @@ import torch.nn as nn
 import torchmetrics
 
 from tqdm import tqdm 
-import hydra
+# import hydra
 # from omegaconf import DictConfig
 
-from clearml import Task, Logger
+# from clearml import Task, Logger
 
 from datamodule import data, utils
 from models import LSTM, CNN, Bertweet, Roberta, Bert
@@ -80,7 +80,7 @@ def calcuate_accuracy(preds, targets):
     return n_correct
 
 # training routine
-task = Task.init(project_name="FL Detection", task_name="Training")
+# task = Task.init(project_name="FL Detection", task_name="Training")
 def train(model, iterator, optimizer, criterion):
     
     epoch_loss = 0
@@ -136,8 +136,8 @@ def train(model, iterator, optimizer, criterion):
         # for GPU
         optimizer.step()
 
-        Logger.current_logger().report_scalar(
-            "train", "loss", iteration = (epoch * len(iterator) + batch_idx), value = loss.item())
+        # Logger.current_logger().report_scalar(
+        #     "train", "loss", iteration = (epoch * len(iterator) + batch_idx), value = loss.item())
 
     epoch_loss = epoch_loss/no_of_iterations
     epoch_acc = (acc*100)/no_of_examples
@@ -162,8 +162,8 @@ def train(model, iterator, optimizer, criterion):
     
     print(f"Training Loss Epoch: {epoch_loss}")
   
-    Logger.current_logger().report_scalar(
-      "train", "accuracy", iteration=epoch, value=acc_torch)
+    # Logger.current_logger().report_scalar(
+    #   "train", "accuracy", iteration=epoch, value=acc_torch)
     
     metric_acc.reset()
     metric_f1.reset()
@@ -277,4 +277,4 @@ for epoch in range(N_EPOCHS):
 test_loss = evaluate(model, test_iterator, loss_function)
 print(f'Test Loss: {test_loss:.3f}')
 
-task.close()
+# task.close()

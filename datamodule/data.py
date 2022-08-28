@@ -1,5 +1,4 @@
 
-import hydra
 
 import torch
 from torchtext import data

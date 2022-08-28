@@ -68,7 +68,7 @@ class BertLSTM(nn.Module):
 
 class BertRCNN(torch.nn.Module):
     """
-    Bert Recurrent CNN
+    Bert  RCNN
     """
     def __init__(self, output_dim, dropout):
         super(BertRCNN, self).__init__()
