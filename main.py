@@ -41,11 +41,11 @@ N_EPOCHS = 3
 # for the reproductibility if the experiments
 utils.seed_everything(SEED)
 
-# TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator1, valid_iterator1, test_iterator1, pad_idx = data.load_dataset(sarc_path, BATCH_SIZE, DEVICE, SEED)
+TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator, valid_iterator, test_iterator, pad_idx = data.load_dataset(sarc_path, BATCH_SIZE_TRAIN, DEVICE, SEED)
 
 
 # BiLSTM model
-# model = LSTM.LSTMSarcasm(OUTPUT_DIM, HIDDEN_DIM, VOCAB_SIZE, EMBEDDING_LENGTH, N_LAYERS, BIDIRECTIONAL)
+model = LSTM.LSTMSarcasm(OUTPUT_DIM, HIDDEN_DIM, VOCAB_SIZE, EMBEDDING_LENGTH, N_LAYERS, BIDIRECTIONAL)
 
 
 # attention LSTM model
@@ -64,10 +64,10 @@ utils.seed_everything(SEED)
 # model = Bert.BertRCNN(2, DROPOUT)
 
 # Bertweet model
-train_iterator, valid_iterator, test_iterator =  data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bertweet_tokenizer, SEED)
+# train_iterator, valid_iterator, test_iterator =  data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bertweet_tokenizer, SEED)
 # model = Bertweet.BertweetClass()
 # model = Bertweet.BertweetLSTM()
-model = Bertweet.BertweetRCNN(2, DROPOUT)
+# model = Bertweet.BertweetRCNN(2, DROPOUT)
 
 model.to(DEVICE)
 # print(model)
@@ -101,19 +101,24 @@ def train(model, iterator, optimizer, criterion):
 
     for batch_idx, batch in tqdm(enumerate(iterator, 0)):
         
-        ids = batch['ids'].to(DEVICE, dtype = torch.long)
-        mask = batch['mask'].to(DEVICE, dtype = torch.long)
-        token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
-        targets = batch['targets'].to(DEVICE, dtype = torch.long)
-        # tweet_lens = batch['tweet_len']
-        # outputs = model(ids, mask)
-        outputs = model(ids, mask, token_type_ids)
+        # ids = batch['ids'].to(DEVICE, dtype = torch.long)
+        # mask = batch['mask'].to(DEVICE, dtype = torch.long)
+        # token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
+        # targets = batch['targets'].to(DEVICE, dtype = torch.long)
 
+        # tweet_lens = batch['tweet_len']
+        tweet, tweet_len = batch.tweet
+        targets = batch.sarcastic
+
+        outputs = model(tweet, tweet_len.to('cpu'))
+        # outputs = model(ids, mask, token_type_ids)
+        predictions = outputs
+        # print(outputs)
         # targets = targets.unsqueeze(1) # for BCEWithLogitsLoss criterion
         loss = criterion(outputs, targets)
         epoch_loss += loss.item()
 
-        _, predictions = torch.max(outputs.data, dim = 1)
+        # _, predictions = torch.max(outputs.data, dim = 1)
         acc = calcuate_accuracy(predictions, targets)
 
         no_of_iterations += 1
@@ -192,14 +197,19 @@ def evaluate(model, iterator, criterion):
     
         for _, batch in tqdm(enumerate(iterator, 0)):
 
-            ids = batch['ids'].to(DEVICE, dtype = torch.long)
-            mask = batch['mask'].to(DEVICE, dtype = torch.long)
-            token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
-            targets = batch['targets'].to(DEVICE, dtype = torch.long)
+            # ids = batch['ids'].to(DEVICE, dtype = torch.long)
+            # mask = batch['mask'].to(DEVICE, dtype = torch.long)
+            # token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
+            # targets = batch['targets'].to(DEVICE, dtype = torch.long)
 
-            outputs = model(ids, mask, token_type_ids)
+            tweet, tweet_len = batch.tweet
+            targets = batch.sarcastic
+
+            outputs = model(tweet, tweet_len.to('cpu'))
+            predictions = outputs
+            # outputs = model(ids, mask, token_type_ids)
         
-            _, predictions = torch.max(outputs.data, dim = 1)
+            # _, predictions = torch.max(outputs.data, dim = 1)
 
             loss = criterion(outputs, targets)
             
@@ -256,14 +266,15 @@ def evaluate(model, iterator, criterion):
              
     return epoch_loss
 
+loss_function = nn.BCEWithLogitsLoss() # for BiLSTM
 
 # experiment loop
 for epoch in range(N_EPOCHS):
     print(f'Epoch: {epoch+1:02}')
-    train_loss = train(model, train_iterator, optimizer, cross_entropy_loss)
-    valid_loss = evaluate(model, valid_iterator, cross_entropy_loss)
+    train_loss = train(model, train_iterator, optimizer, loss_function)
+    valid_loss = evaluate(model, valid_iterator, loss_function)
         
-test_loss = evaluate(model, test_iterator, cross_entropy_loss)
+test_loss = evaluate(model, test_iterator, loss_function)
 print(f'Test Loss: {test_loss:.3f}')
 
 task.close()

@@ -69,7 +69,7 @@ class RobertaLSTMSarc(torch.nn.Module):
 
 class RobertaRCNN(torch.nn.Module):
     """
-    Roberta Recurrent CNN
+    Roberta + RCNN
     """
     def __init__(self, output_dim, dropout):
         super(RobertaRCNN, self).__init__()
