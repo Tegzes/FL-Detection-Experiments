@@ -1,21 +1,24 @@
 # FL-Detection-Experiments
 
-Documenting some experiments done for Figurative Language Detetcion.
+Documenting the experiments done for Figurative Language Detection task.
 
-Trying different Models on iSarcasm 2022 and SARC datasets.
+Trying different Models on sarcasm detection datasets. 
 
-Bert
+Datasets used: 
+- iSarcasm 2022 (Twitter based)
+- Ghosh (Twitter based)
+- Ptacek (Twitter based)
+- SARC (Reddit based)
 
-Roberta
+Models used:
+- Baseline trasnformers: BERT, RoBERTa, BerTweet
+- Modified models: BERT/RoBERTa/BerTweet + LSTM/RCNN
 
-Bertweet
+Moreover, the datasets were augmented using NLPAUG:
+- random word insertions
+- words replaced with synonyms
+- random words deletion
 
-Roberta + LSTM 
+Additionally experimented with:
 
-Bertweet + LSTM
-
-Roberta + RCNN (concatenated Roberta outputs and LSTM output)
-
-Bert + LSTM
-
-GloVe + LSTM/Attention LSTM/CNN
+GloVe embeddins + LSTM/Attention LSTM/CNN models
