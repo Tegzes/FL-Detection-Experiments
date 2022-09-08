@@ -4,10 +4,10 @@ import re
 import torch
 
 import numpy as np
-# import spacy
-# from spacy.tokenizer import Tokenizer
-# nlp = spacy.load("en_core_web_sm")
-# tokenizer = Tokenizer(nlp.vocab)
+import spacy
+from spacy.tokenizer import Tokenizer
+nlp = spacy.load("en_core_web_sm")
+tokenizer = Tokenizer(nlp.vocab)
 
 
 def clean_text(text):

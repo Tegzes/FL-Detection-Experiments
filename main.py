@@ -41,11 +41,11 @@ N_EPOCHS = 3
 # for the reproductibility if the experiments
 utils.seed_everything(SEED)
 
-TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator, valid_iterator, test_iterator, pad_idx = data.load_dataset(sarc_path, BATCH_SIZE_TRAIN, DEVICE, SEED)
+# TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator, valid_iterator, test_iterator, pad_idx = data.load_dataset(sarc_path, BATCH_SIZE_TRAIN, DEVICE, SEED)
 
 
 # BiLSTM model
-model = LSTM.LSTMSarcasm(OUTPUT_DIM, HIDDEN_DIM, VOCAB_SIZE, EMBEDDING_LENGTH, N_LAYERS, BIDIRECTIONAL)
+# model = LSTM.LSTMSarcasm(OUTPUT_DIM, HIDDEN_DIM, VOCAB_SIZE, EMBEDDING_LENGTH, N_LAYERS, BIDIRECTIONAL)
 
 
 # attention LSTM model
@@ -64,8 +64,8 @@ model = LSTM.LSTMSarcasm(OUTPUT_DIM, HIDDEN_DIM, VOCAB_SIZE, EMBEDDING_LENGTH, N
 # model = Bert.BertRCNN(2, DROPOUT)
 
 # Bertweet model
-# train_iterator, valid_iterator, test_iterator =  data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bertweet_tokenizer, SEED)
-# model = Bertweet.BertweetClass()
+train_iterator, valid_iterator, test_iterator =  data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bertweet_tokenizer, SEED)
+model = Bertweet.BertweetClass()
 # model = Bertweet.BertweetLSTM()
 # model = Bertweet.BertweetRCNN(2, DROPOUT)
 
@@ -84,7 +84,6 @@ def calcuate_accuracy(preds, targets):
 def train(model, iterator, optimizer, criterion):
     
     epoch_loss = 0
-    epoch_acc = 0
     no_of_iterations = 0
     no_of_examples = 0
     
@@ -101,24 +100,24 @@ def train(model, iterator, optimizer, criterion):
 
     for batch_idx, batch in tqdm(enumerate(iterator, 0)):
         
-        # ids = batch['ids'].to(DEVICE, dtype = torch.long)
-        # mask = batch['mask'].to(DEVICE, dtype = torch.long)
-        # token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
-        # targets = batch['targets'].to(DEVICE, dtype = torch.long)
+        ids = batch['ids'].to(DEVICE, dtype = torch.long)
+        mask = batch['mask'].to(DEVICE, dtype = torch.long)
+        token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
+        targets = batch['targets'].to(DEVICE, dtype = torch.long)
 
         # tweet_lens = batch['tweet_len']
-        tweet, tweet_len = batch.tweet
-        targets = batch.sarcastic
+        # tweet, tweet_len = batch.tweet
+        # targets = batch.sarcastic
 
-        outputs = model(tweet, tweet_len.to('cpu'))
-        # outputs = model(ids, mask, token_type_ids)
+        # outputs = model(tweet, tweet_len.to('cpu'))
+        outputs = model(ids, mask, token_type_ids)
         predictions = outputs
         # print(outputs)
         # targets = targets.unsqueeze(1) # for BCEWithLogitsLoss criterion
         loss = criterion(outputs, targets)
         epoch_loss += loss.item()
 
-        # _, predictions = torch.max(outputs.data, dim = 1)
+        _, predictions = torch.max(outputs.data, dim = 1)
         acc = calcuate_accuracy(predictions, targets)
 
         no_of_iterations += 1
@@ -136,11 +135,8 @@ def train(model, iterator, optimizer, criterion):
         # for GPU
         optimizer.step()
 
-        # Logger.current_logger().report_scalar(
-        #     "train", "loss", iteration = (epoch * len(iterator) + batch_idx), value = loss.item())
 
     epoch_loss = epoch_loss/no_of_iterations
-    epoch_acc = (acc*100)/no_of_examples
         
     acc_torch = metric_acc.compute()
     print(f"Training Accuracy: {acc_torch}")
@@ -161,10 +157,7 @@ def train(model, iterator, optimizer, criterion):
     print(f"Training Recall: {recall}")
     
     print(f"Training Loss Epoch: {epoch_loss}")
-  
-    # Logger.current_logger().report_scalar(
-    #   "train", "accuracy", iteration=epoch, value=acc_torch)
-    
+      
     metric_acc.reset()
     metric_f1.reset()
     metric_f1_micro.reset()
@@ -178,7 +171,6 @@ def train(model, iterator, optimizer, criterion):
 def evaluate(model, iterator, criterion):
     
     epoch_loss = 0
-    epoch_acc = 0
     no_of_iterations = 0
     no_of_examples = 0    
     
@@ -197,19 +189,19 @@ def evaluate(model, iterator, criterion):
     
         for _, batch in tqdm(enumerate(iterator, 0)):
 
-            # ids = batch['ids'].to(DEVICE, dtype = torch.long)
-            # mask = batch['mask'].to(DEVICE, dtype = torch.long)
-            # token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
-            # targets = batch['targets'].to(DEVICE, dtype = torch.long)
+            ids = batch['ids'].to(DEVICE, dtype = torch.long)
+            mask = batch['mask'].to(DEVICE, dtype = torch.long)
+            token_type_ids = batch['token_type_ids'].to(DEVICE, dtype = torch.long)
+            targets = batch['targets'].to(DEVICE, dtype = torch.long)
 
-            tweet, tweet_len = batch.tweet
-            targets = batch.sarcastic
+            # tweet, tweet_len = batch.tweet
+            # targets = batch.sarcastic
 
-            outputs = model(tweet, tweet_len.to('cpu'))
-            predictions = outputs
-            # outputs = model(ids, mask, token_type_ids)
+            # outputs = model(tweet, tweet_len.to('cpu'))
+            # predictions = outputs
+            outputs = model(ids, mask, token_type_ids)
         
-            # _, predictions = torch.max(outputs.data, dim = 1)
+            _, predictions = torch.max(outputs.data, dim = 1)
 
             loss = criterion(outputs, targets)
             
@@ -228,7 +220,6 @@ def evaluate(model, iterator, criterion):
             no_of_examples += targets.size(0)
     
     epoch_loss = epoch_loss/no_of_iterations
-    epoch_acc = (acc*100)/no_of_iterations #no_of_examples
 
     acc_torch = metric_acc.compute()
     print(f"Validation Accuracy: {acc_torch}")
@@ -249,13 +240,6 @@ def evaluate(model, iterator, criterion):
     print(f"Validation Recall: {recall}")
     
     print(f"Validation Loss Epoch: {epoch_loss}")
-
-    # clear ml
-    Logger.current_logger().report_scalar(
-        "test", "loss", iteration=epoch, value=epoch_loss)
-    Logger.current_logger().report_scalar(
-        "test", "accuracy", iteration=epoch, value=acc_torch)
-
 
     metric_acc.reset()
     metric_f1.reset()

@@ -6,7 +6,7 @@ from transformers import AutoModel, AutoConfig
 
 class BertweetClass(nn.Module):
     """
-    BERTWEET
+    Bertweet
     """
     def __init__(self):
         super(BertweetClass, self).__init__()
@@ -28,7 +28,7 @@ class BertweetClass(nn.Module):
 
 class BertweetLSTM(nn.Module):
     """
-    BERTWEET + LSTM
+    Bertweet + LSTM
     """
     def __init__(self):
         super(BertweetLSTM, self).__init__()
@@ -55,7 +55,7 @@ class BertweetLSTM(nn.Module):
 
 class BertweetRCNN(torch.nn.Module):
     """
-    Bertweet RCNN
+    Bertweet + RCNN
     """
     def __init__(self, output_dim, dropout):
         super(BertweetRCNN, self).__init__()

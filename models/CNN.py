@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence
 import torch.nn.functional as F
+import torch.optim as optim
+
 
 if torch.cuda.is_available():       
     device = torch.device("cuda")
@@ -100,9 +102,6 @@ class CNN_NLP(nn.Module):
 
         return logits
 
-
-
-import torch.optim as optim
 
 def initilize_model(pretrained_embedding=None,
                     freeze_embedding=False,
