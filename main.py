@@ -98,7 +98,7 @@ def train(model, iterator, optimizer, criterion):
     
     model.train()
 
-    for batch_idx, batch in tqdm(enumerate(iterator, 0)):
+    for _, batch in tqdm(enumerate(iterator, 0)):
         
         ids = batch['ids'].to(DEVICE, dtype = torch.long)
         mask = batch['mask'].to(DEVICE, dtype = torch.long)
