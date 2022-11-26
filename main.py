@@ -50,19 +50,19 @@ utils.seed_everything(SEED)
 # model = LSTM.LSTMSarcasmAttn(OUTPUT_DIM, HIDDEN_DIM, VOCAB_SIZE, EMBEDDING_LENGTH, N_LAYERS)
 
 # Roberta models
-# train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, roberta_tokenizer, SEED)
+# train_iterator, valid_iterator, test_iterator = data.transformer_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, roberta_tokenizer, SEED)
 # model = Roberta.RobertaSarc(DROPOUT, OUTPUT_DIM)
 # model = Roberta.RobertaLSTMSarc(N_LAYERS, BIDIRECTIONAL, DROPOUT, OUTPUT_DIM)
 # model = Roberta.RobertaLSTMSarc(DROPOUT, OUTPUT_DIM)
 
 # BERT models
-# train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bert_tokenizer, SEED)
+# train_iterator, valid_iterator, test_iterator = data.transformer_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bert_tokenizer, SEED)
 # model = Bert.BertClass(DROPOUT, OUTPUT_DIM)
 # model = Bert.BertLSTM(N_LAYERS, BIDIRECTIONAL, DROPOUT, OUTPUT_DIM)
 # model = Bert.BertRCNN(DROPOUT, OUTPUT_DIM)
 
 # Bertweet models
-train_iterator, valid_iterator, test_iterator =  data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bertweet_tokenizer, SEED)
+train_iterator, valid_iterator, test_iterator =  data.transformer_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bertweet_tokenizer, SEED)
 model = Bertweet.BertweetClass()
 # model = Bertweet.BertweetLSTM(N_LAYERS, BIDIRECTIONAL, DROPOUT, OUTPUT_DIM)
 # model = Bertweet.BertweetRCNN(DROPOUT, OUTPUT_DIM)

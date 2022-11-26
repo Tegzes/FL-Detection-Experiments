@@ -100,7 +100,7 @@ class SarcasmData(Dataset):
 
 
 # @hydra.main(config_path="conf", config_name="config")
-def roberta_data_loader(file_path,
+def transformer_data_loader(file_path,
                     batch_size_train,
                     batch_size_test,
                     shuffle,
