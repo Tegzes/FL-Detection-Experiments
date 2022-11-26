@@ -43,31 +43,30 @@ utils.seed_everything(SEED)
 
 # TEXT, EMBEDDING_DIM, VOCAB_SIZE, word_embeddings, train_iterator, valid_iterator, test_iterator, pad_idx = data.load_dataset(sarc_path, BATCH_SIZE_TRAIN, DEVICE, SEED)
 
-
 # BiLSTM model
 # model = LSTM.LSTMSarcasm(OUTPUT_DIM, HIDDEN_DIM, VOCAB_SIZE, EMBEDDING_LENGTH, N_LAYERS, BIDIRECTIONAL)
-
 
 # attention LSTM model
 # model = LSTM.LSTMSarcasmAttn(OUTPUT_DIM, HIDDEN_DIM, VOCAB_SIZE, EMBEDDING_LENGTH, N_LAYERS)
 
-
 # Roberta models
 # train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, roberta_tokenizer, SEED)
-# model = Roberta.RobertaSarc()
-# model = Roberta.RobertaLSTMSarc(N_LAYERS, BIDIRECTIONAL, OUTPUT_DIM)
+# model = Roberta.RobertaSarc(DROPOUT, OUTPUT_DIM)
+# model = Roberta.RobertaLSTMSarc(N_LAYERS, BIDIRECTIONAL, DROPOUT, OUTPUT_DIM)
+# model = Roberta.RobertaLSTMSarc(DROPOUT, OUTPUT_DIM)
 
-# Bert + LSTM
+# BERT models
 # train_iterator, valid_iterator, test_iterator = data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bert_tokenizer, SEED)
-# model = Bert.BertClass()
-# model = Bert.BertLSTM(bert, BIDIRECTIONAL, 2)
-# model = Bert.BertRCNN(2, DROPOUT)
+# model = Bert.BertClass(DROPOUT, OUTPUT_DIM)
+# model = Bert.BertLSTM(N_LAYERS, BIDIRECTIONAL, DROPOUT, OUTPUT_DIM)
+# model = Bert.BertRCNN(DROPOUT, OUTPUT_DIM)
 
-# Bertweet model
+# Bertweet models
 train_iterator, valid_iterator, test_iterator =  data.roberta_data_loader(sarc_path, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, True, 0, MAX_LEN, bertweet_tokenizer, SEED)
 model = Bertweet.BertweetClass()
-# model = Bertweet.BertweetLSTM()
-# model = Bertweet.BertweetRCNN(2, DROPOUT)
+# model = Bertweet.BertweetLSTM(N_LAYERS, BIDIRECTIONAL, DROPOUT, OUTPUT_DIM)
+# model = Bertweet.BertweetRCNN(DROPOUT, OUTPUT_DIM)
+
 
 model.to(DEVICE)
 # print(model)

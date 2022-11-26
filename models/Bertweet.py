@@ -87,7 +87,7 @@ class BertweetRCNN(torch.nn.Module):
     The class that represents the original Bertweet model 
     combined with the RCNN layers
     """
-    def __init__(self, output_dim, dropout):
+    def __init__(self, dropout, output_dim):
         super(BertweetRCNN, self).__init__()
         
         config = AutoConfig.from_pretrained(BERTWEET_MODEL)

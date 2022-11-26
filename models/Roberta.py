@@ -84,7 +84,7 @@ class RobertaRCNN(torch.nn.Module):
     The class that represents the original Roberta model 
     combined with the RCNN layers
     """
-    def __init__(self, output_dim, dropout):
+    def __init__(self, dropout, output_dim):
         super(RobertaRCNN, self).__init__()
         
         self.config = RobertaConfig.from_pretrained(ROBERTA_MODEL)
