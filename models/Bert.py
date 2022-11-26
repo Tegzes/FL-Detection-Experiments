@@ -72,7 +72,7 @@ class BertLSTM(torch.nn.Module):
         _, (last_hidden, _) = self.lstm(bert_embedded)
 
         output_hidden = torch.cat((last_hidden[0], last_hidden[1]), dim=-1)
-        output_hidden = self.dropout(output_hidden, 0.2)
+        output_hidden = self.dropout(output_hidden)
         output = self.classifier(output_hidden)
 
         #output = [batch size, out dim]

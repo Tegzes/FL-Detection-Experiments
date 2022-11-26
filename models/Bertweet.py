@@ -53,7 +53,6 @@ class BertweetLSTM(torch.nn.Module):
 
         self.num_layers = num_layers
         self.bidirectional = bidirectional
-        self.dropout = dropout
         self.output_dim = output_dim
 
         self.config = AutoConfig.from_pretrained(BERTWEET_MODEL)
@@ -69,13 +68,11 @@ class BertweetLSTM(torch.nn.Module):
     def forward(self, input_ids, attention_mask, token_type_ids):
         bertweet_embedded = self.bertweet(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)[0]
 
-        _, (last_hidden, _) = self.LSTM(bertweet_embedded)
+        _, (last_hidden, _) = self.lstm(bertweet_embedded)
 
         output_hidden = torch.cat((last_hidden[0], last_hidden[1]), dim=-1)
-        output_hidden = self.dropout(output_hidden,0.2)
-        
-        # output_hidden = F.dropout(embedded, 0.2)
-        output = self.out(output_hidden)
+        output_hidden = self.dropout(output_hidden)
+        output = self.classifier(output_hidden)
 
         #output = [batch size, out dim]
         return output

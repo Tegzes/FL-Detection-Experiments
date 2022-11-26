@@ -52,7 +52,6 @@ class RobertaLSTMSarc(torch.nn.Module):
 
         self.num_layers = num_layers
         self.bidirectional = bidirectional
-        self.dropout = dropout
         self.output_dim = output_dim
 
         self.config = RobertaConfig.from_pretrained(ROBERTA_MODEL)
